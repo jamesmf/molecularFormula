@@ -87,6 +87,21 @@ def dumpWeights(model):
         layercount  +=1
 
 
+def testWAverages(direct,mfs,means):
+    ld  = listdir(direct)
+    shuffle(ld)
+    num     = 20000
+    preds   = np.zeros((num,16),dtype=np.float)
+    y       = np.zeros((num,16),dtype=np.float)
+    count   = 0
+    for x in ld[:num]:
+        CID     = x[:x.find(".png")]
+        y[count,:]  = mfs[CID]
+        preds[count,:] = means
+        count+=1
+   
+    print "RMSE of guessing: ", np.sqrt(mean_squared_error(y, preds))
+
 
 size    = 200
 imdim   = size - 20                         #strip 10 pixels buffer from each size
@@ -126,6 +141,9 @@ testTargets     = np.zeros((numTrainEx/10,outsize),dtype=np.float)
 
 targetMeans     = getTargetMeans(mfs)
 
+
+#testWAverages(direct,mfs,targetMeans)
+#stop = raw_input("")
 
 #model = Sequential()
 #
