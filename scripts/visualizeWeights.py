@@ -24,32 +24,41 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import SGD, Adadelta, Adagrad
 
 
+vmap     = True
 
-
+if vmap == True:
+    d     = "../map/layer"
+else:
+    d     = "../layer"
 
 """ VISUALIZATION """
 
 for i in range(0,100):
-    if isfile("../layer"+str(i)+".pickle"):
-        with open("../layer"+str(i)+".pickle",'rb') as f:
+    if isfile(d+str(i)+".pickle"):
+        with open(d+str(i)+".pickle",'rb') as f:
             weights     = cPickle.load(f)
         greymap     = plt.get_cmap('gray')
         size        = len(weights)
         if size < 100:
             print "visualizing layer ", i
-            rows        = size/8
-            f, axarr    = plt.subplots(rows,8)
+            rows        = size/4
+            #f, axarr    = plt.subplots(rows,8)
             count       = 0
             for x in weights:
-                row     = count/8
-                col     = count%8
+                row     = count/4
+                col     = count%4
                 p   = x[0,:,:]
-                axarr[row,col].axis('off')
-                axarr[row,col].imshow(p,cmap = greymap)
+                print rows
+                print row*8+col
+                plt.subplot(rows,rows,row*4+col+1)
+                plt.axis('off')
+                plt.imshow(p,cmap = greymap)
+                #axarr[row,col].axis('off')
+                #axarr[row,col].imshow(p,cmap = greymap)
                 count   +=1
                 
             plt.suptitle("Layer "+str(i))
-            plt.savefig("../layer"+str(i)+".jpg")
+            plt.savefig(d+str(i)+".jpg")
     
 
 

@@ -61,9 +61,11 @@ from keras.optimizers import SGD, Adadelta, Adagrad
 def getTargetMeans(mfs):
     x   = np.mean(mfs.values(),axis=0)
     y   = np.std(mfs.values(),axis=0)
+    print "means", x
+    print "stds", y
 #    np.savetxt("../targetMeans.txt",x,delimiter=',')
 #    stop=raw_input("")
-    return x
+    return x,y
         
 
 
@@ -102,7 +104,6 @@ def testWAverages(direct,mfs,means):
    
     print "RMSE of guessing: ", np.sqrt(mean_squared_error(y, preds))
 
-
 size    = 200
 imdim   = size - 20                         #strip 10 pixels buffer from each size
 direct  = "../data/images"+str(size)+"/"
@@ -111,7 +112,6 @@ numEx   = len(ld)
 
 
 DUMP_WEIGHTS = True
-
 
 shuffle(ld)
 
@@ -139,7 +139,7 @@ trainTargets    = np.zeros((numTrainEx,outsize),dtype=np.float)
 testImages      = np.zeros((numTrainEx/10,1,imdim,imdim),dtype=np.float)
 testTargets     = np.zeros((numTrainEx/10,outsize),dtype=np.float)
 
-targetMeans     = getTargetMeans(mfs)
+targetMeans,stds= getTargetMeans(mfs)
 
 
 #testWAverages(direct,mfs,targetMeans)
@@ -228,6 +228,9 @@ model.compile(loss='mean_squared_error', optimizer='adadelta')
 numIterations   = trainL/chunkSize + 1
 superEpochs     = 10
 for sup in range(0,superEpochs):
+    with open("../wholeModel.pickle", 'wb') as f:
+        cp     = cPickle.Pickler(f)
+        cp.dump(model)
     print "*"*80
     print "TRUE EPOCH ", sup
     print "*"*80    
@@ -240,7 +243,7 @@ for sup in range(0,superEpochs):
                 image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
                 image   = np.where(image > 0.1,1.0,0.0)
                 trainImages[count,0,:,:]    = image
-                trainTargets[count]         = np.subtract(mfs[CID],targetMeans)
+                trainTargets[count]         = np.divide(np.subtract(mfs[CID],targetMeans),stds)
                 count +=1
     
         model.fit(trainImages, trainTargets, batch_size=batch_size, nb_epoch=1)
@@ -254,7 +257,7 @@ for sup in range(0,superEpochs):
                 image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
                 image   = np.where(image > 0.1,1.0,0.0)
                 testImages[count,0,:,:]    = image
-                testTargets[count]         = np.subtract(mfs[CID],targetMeans)
+                testTargets[count]         = np.divide(np.subtract(mfs[CID],targetMeans),stds)
                 count +=1
         
         preds   = model.predict(testImages)
@@ -262,11 +265,11 @@ for sup in range(0,superEpochs):
         print RMSE
         if RMSE < 3:
             for ind1 in range(0,len(preds)):
-                if ind1 < 20:
+                if ind1 < 2:
                     p   = [int(x) for x in preds[ind1]]
-                    p   = [p[ind2]*targetMeans[ind2] for ind2 in range(0,len(targetMeans))]
+                    p   = [(p[ind2]+targetMeans[ind2])*stds[ind2] for ind2 in range(0,len(targetMeans))]
                     t   = [int(x) for x in testTargets[ind1]]
-                    t   = [t[ind2]*targetMeans[ind2] for ind2 in range(0,len(targetMeans))]
+                    t   = [(t[ind2]+targetMeans[ind2])*stds[ind2] for ind2 in range(0,len(targetMeans))]
                     print p, t
         
         if DUMP_WEIGHTS:

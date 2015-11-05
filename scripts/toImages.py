@@ -118,7 +118,7 @@ for x in CIDs:
             imgRequest  = urllib2.Request(imgUrl, headers=headers)
             imgData     = urllib2.urlopen(imgRequest).read()
             
-            with open(directory+x+".png",'wb') as f:
+            with open(directory+x+".svg",'wb') as f:
                 f.write(imgData)
         except urllib2.URLError, e:
             cantRender +=1 
