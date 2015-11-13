@@ -11,3 +11,4 @@ The input to the model is a 180x180 image created by the NCATS renderer from a m
 # Validation
 Without cross-validation to optimize the model, we achieve 0.36 RMSE after 8 epochs.
 
+![Alt text](https://cloud.githubusercontent.com/assets/7809188/11154289/7ce6006a-8a0c-11e5-90ad-c572ee5f9b26.jpg)
