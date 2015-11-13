@@ -77,14 +77,12 @@ atomset     = set()
 with open("../cidsMF.txt",'rb') as f:
     for x in f:
         CID, counts, mwt    = handleLine(x,reg)
-        print CID, counts
         atomset = atomset | set(counts.keys())
 
 print atomset
 atomlist    = list(atomset)
 cidMFs      = {}
-print atomlist
-stop=raw_input("")
+
 with open("../cidsMF.pickle",'wb') as fout:
     with open("../cidsMF.txt",'rb') as f:
         for x in f:
@@ -97,11 +95,9 @@ with open("../cidsMF.pickle",'wb') as fout:
                 
             cidMFs[CID] = vec
 
-    print len(cidMFs.keys())
-    print len(cidMFs[cidMFs.keys()[0]])
     cp  = cPickle.Pickler(fout)
     cp.dump(cidMFs)    
-stop=raw_input("")
+
 
 with open("../data/sols.pickle",'wb') as f:
     cp  = cPickle.Pickler(f)
