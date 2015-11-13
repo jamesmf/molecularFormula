@@ -33,10 +33,12 @@ from keras.optimizers import SGD, Adadelta, Adagrad
 
 def printFormula(p,t,atomlist,cid):
     print '\t',cid
-    print 'ATOM\tACTUAL\tPREDICTED'
+    print 'ATOM\tACTUAL\tPREDICTED\tFLOAT PREDICTION'
     for ind in range(0,len(atomlist)):
         if t[ind] > .1:
-            print atomlist[ind],'\t',int(t[ind]),'\t',p[ind]
+            print atomlist[ind],'\t',int(t[ind]),'\t',int(np.round(p[ind])),'\t', p[ind]
+        elif np.round(p[ind]) > 0:
+            print atomlist[ind],'\t',int(t[ind]),'\t',int(np.round(p[ind])),'\t', p[ind]
 
 def getTargetMeans(mfs):
     x   = np.mean(mfs.values(),axis=0)
@@ -119,7 +121,7 @@ testTargets     = np.zeros((numTrainEx/10,outsize),dtype=np.float)
 
 targetMeans,stds= getTargetMeans(mfs)
 
-with open("../wholeModel.pickle", 'rb') as f:
+with open("../molecularFormula/wholeModel.pickle", 'rb') as f:
     model     = cPickle.load(f)
 
 
@@ -143,12 +145,13 @@ print RMSE
 if RMSE < 3:
     for ind1 in range(0,len(preds)):
         if ind1 < 10 :
-            #plt.imshow(testImages[ind1,0,:,:])
-            #plt.show()
+            
             p   = [x for x in preds[ind1]]
             p   = [(p[ind2]*stds[ind2])+targetMeans[ind2] for ind2 in range(0,len(targetMeans))]
             t   = testTargets[ind1]
             t   = [int((t[ind2]*stds[ind2])+targetMeans[ind2]) for ind2 in range(0,len(targetMeans))]
             printFormula(p,t,atomlist,cids[ind1])
+            plt.imshow(testImages[ind1,0,:,:])
+            plt.show()
 
 

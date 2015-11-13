@@ -14,6 +14,7 @@ import numpy as np
 from os import listdir
 from random import shuffle
 import cPickle
+import sys
 
 from sklearn.metrics import mean_squared_error
 
@@ -26,37 +27,6 @@ from keras.optimizers import SGD, Adadelta, Adagrad
 
 
 
-#def visualize(model):
-#    """ VISUALIZATION """
-#    greymap     = plt.get_cmap('gray')
-#        
-#    layercount  = 0
-#    for layer in model.layers:
-#        try:
-#            weights     = model.layers[layercount].get_weights()[0]
-#            size        = len(weights)
-#            if size < 100:
-#                print "visualizing layer ", layercount
-#                rows        = size/8
-#                f, axarr    = plt.subplots(rows,8)
-#                count       = 0
-#                for x in weights:
-#                    row     = count/8
-#                    col     = count%8
-#                    p   = x[0,:,:]
-#                    axarr[row,col].axis('off')
-#                    axarr[row,col].imshow(p,cmap = greymap)
-#                    count   +=1
-#                    
-#                plt.suptitle("Layer "+str(layercount))
-#                plt.savefig("../layer"+str(layercount)+".jpg")
-#
-#            else:
-#                pass
-#                
-#        except IndexError:
-#            pass
-#        layercount  +=1
 
 def getTargetMeans(mfs):
     x   = np.mean(mfs.values(),axis=0)
@@ -76,9 +46,7 @@ def dumpWeights(model):
             weights     = model.layers[layercount].get_weights()[0]
             size        = len(weights)
             if size < 100:
-                print "visualizing layer ", layercount
-                
-                with open("../layer"+str(layercount)+".pickle",'wb') as f:
+                with open("../molecularFormula/layer"+str(layercount)+".pickle",'wb') as f:
                     cp = cPickle.Pickler(f)
                     cp.dump(weights)
             else:
@@ -142,83 +110,51 @@ testTargets     = np.zeros((numTrainEx/10,outsize),dtype=np.float)
 targetMeans,stds= getTargetMeans(mfs)
 
 
-#testWAverages(direct,mfs,targetMeans)
-#stop = raw_input("")
+if len(sys.argv) <= 1:
+    print "needs 'update' or 'new' as first argument"
+    sys.exit(1)
+    
+if sys.argv[1].lower().strip() == "new":
+    model = Sequential()
+    
+    model.add(Convolution2D(32, 1, 5, 5, border_mode='full')) 
+    model.add(Activation('relu'))
+    
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    
+    model.add(Convolution2D(32, 32, 5, 5))
+    model.add(Activation('relu'))
+    
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    
+    model.add(Convolution2D(64, 32, 5, 5)) 
+    model.add(Activation('relu'))
+    
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    
+    model.add(Convolution2D(64, 64, 4, 4)) 
+    model.add(Activation('relu'))
+    
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    model.add(Dropout(0.25))
+    
+    model.add(Flatten())
+    model.add(Dense(4096, 512, init='normal'))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    
+    model.add(Dense(512, outsize, init='normal'))
+    
+    
+    model.compile(loss='mean_squared_error', optimizer='adadelta')
 
-#model = Sequential()
-#
-#model.add(Convolution2D(32, 1, 16, 16, border_mode='full')) 
-#model.add(Activation('relu'))
-#
-#model.add(MaxPooling2D(poolsize=(2, 2)))
-#
-#model.add(Convolution2D(32, 32, 5, 5))
-#model.add(Activation('relu'))
-#
-#model.add(MaxPooling2D(poolsize=(2, 2)))
-#
-#model.add(Convolution2D(64, 32, 4, 4)) 
-#model.add(Activation('relu'))
-#
-#model.add(MaxPooling2D(poolsize=(2, 2)))
-#
-#model.add(Convolution2D(64, 64, 4, 4)) 
-#model.add(Activation('relu'))
-#
-#model.add(MaxPooling2D(poolsize=(2, 2)))
-#model.add(Dropout(0.25))
-#
-#model.add(Convolution2D(64, 64, 5, 5)) 
-#model.add(Activation('relu'))
-#
-#model.add(Flatten())
-#model.add(Dense(1600, 512, init='normal'))
-#model.add(Activation('relu'))
-#model.add(Dropout(0.5))
-#
-#model.add(Dense(512, outsize, init='normal'))
-#)
-#
-#
-
-
-
-
-
-model = Sequential()
-
-model.add(Convolution2D(32, 1, 5, 5, border_mode='full')) 
-model.add(Activation('relu'))
-
-model.add(MaxPooling2D(poolsize=(2, 2)))
-
-model.add(Convolution2D(32, 32, 5, 5))
-model.add(Activation('relu'))
-
-model.add(MaxPooling2D(poolsize=(2, 2)))
-
-model.add(Convolution2D(64, 32, 5, 5)) 
-model.add(Activation('relu'))
-
-model.add(MaxPooling2D(poolsize=(2, 2)))
-
-model.add(Convolution2D(64, 64, 4, 4)) 
-model.add(Activation('relu'))
-
-model.add(MaxPooling2D(poolsize=(2, 2)))
-model.add(Dropout(0.25))
-
-model.add(Flatten())
-model.add(Dense(4096, 512, init='normal'))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
-
-model.add(Dense(512, outsize, init='normal'))
-
-# let's train the model using SGD + momentum (how original).
-#sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-model.compile(loss='mean_squared_error', optimizer='adadelta')
-#model.compile(loss='categorical_crossentropy', optimizer=sgd
+elif sys.argv[1].lower().strip() == "update":
+    with open("../molecularFormula/wholeModel.pickle",'rb') as f:
+        model     = cPickle.load(f)
+        
+else:
+    print "needs 'update' or 'new' as first argument"
+    sys.exit(1)
 
 
 
@@ -228,9 +164,7 @@ model.compile(loss='mean_squared_error', optimizer='adadelta')
 numIterations   = trainL/chunkSize + 1
 superEpochs     = 10
 for sup in range(0,superEpochs):
-    with open("../wholeModel.pickle", 'wb') as f:
-        cp     = cPickle.Pickler(f)
-        cp.dump(model)
+
     print "*"*80
     print "TRUE EPOCH ", sup
     print "*"*80    
@@ -266,16 +200,18 @@ for sup in range(0,superEpochs):
         if RMSE < 3:
             for ind1 in range(0,len(preds)):
                 if ind1 < 2:
-                    p   = [int(x) for x in preds[ind1]]
-                    p   = [(p[ind2]+targetMeans[ind2])*stds[ind2] for ind2 in range(0,len(targetMeans))]
-                    t   = [int(x) for x in testTargets[ind1]]
-                    t   = [(t[ind2]+targetMeans[ind2])*stds[ind2] for ind2 in range(0,len(targetMeans))]
+                    p   = [ex for ex in preds[ind1]]
+                    p   = [p[ind2]*stds[ind2]+targetMeans[ind2] for ind2 in range(0,len(targetMeans))]
+                    t   = [x for x in testTargets[ind1]]
+                    t   = [int(t[ind2]*stds[ind2]+targetMeans[ind2]) for ind2 in range(0,len(targetMeans))]
                     print p, t
         
         if DUMP_WEIGHTS:
             dumpWeights(model)
-        
 
+        with open("../molecularFormula/wholeModel.pickle", 'wb') as f:
+            cp     = cPickle.Pickler(f)
+            cp.dump(model)
 
 del trainTargets, trainImages
 """ END TRAINING """

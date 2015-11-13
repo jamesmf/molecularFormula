@@ -24,12 +24,16 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import SGD, Adadelta, Adagrad
 
 
-vmap     = True
+vmap     = False
+vecfp    = True
 
 if vmap == True:
     d     = "../map/layer"
+    
+elif vecfp == True:
+    d     = "../ecfp/layer"
 else:
-    d     = "../layer"
+    d     = "../molecularFormula/layer"
 
 """ VISUALIZATION """
 
@@ -48,8 +52,6 @@ for i in range(0,100):
                 row     = count/4
                 col     = count%4
                 p   = x[0,:,:]
-                print rows
-                print row*8+col
                 plt.subplot(rows,rows,row*4+col+1)
                 plt.axis('off')
                 plt.imshow(p,cmap = greymap)

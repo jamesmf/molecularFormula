@@ -58,7 +58,7 @@ DUMP_WEIGHTS    = True
 size            = 200
 scaling         = 4
 batch_size      = 8
-chunkSize       = 1024
+chunkSize       = 2048
 testChunkSize   = 256   
 direct          = "../data/images"+str(size)+"/"
 direct2         = "../data/locations"+str(size)+"/"
@@ -89,39 +89,44 @@ trainTargets    = np.zeros((numTrainEx,outsize),dtype=np.float)
 #testImages      = np.zeros((testChunkSize,1,size,size),dtype=np.float)
 #testTargets     = np.zeros((testChunkSize,outsize),dtype=np.float)
 
+if len(sys.argv) <= 1:
+    print "Must run with either 'python cnnMap.py new' or 'python cnnMap.py update'"
+    sys.exit(1)
 
-model = Sequential()
+if sys.argv[1].lower().strip() == "update":
+    with open("../map/wholeModel.pickle",'rb') as f:
+        model     = cPickle.load(f)
+elif sys.argv[1].lower().strip() == "new":
+    model = Sequential()
+    
+    model.add(Convolution2D(32, 1, 4, 4, border_mode='full')) 
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    model.add(Convolution2D(32, 32, 4, 4))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    model.add(Convolution2D(64, 32, 4, 4))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    model.add(Convolution2D(64, 64, 2, 2))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    model.add(Convolution2D(64, 64, 2, 2))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    model.add(Dropout(0.25))
+    
+    
+    model.add(Flatten())
+    model.add(Dense(64*5**2, outsize))
+    model.add(Activation('relu'))
+    
+    model.compile(loss='mean_squared_error', optimizer='rmsprop')
 
-model.add(Convolution2D(32, 1, 4, 4, border_mode='full')) 
-model.add(Activation('relu'))
-model.add(MaxPooling2D(poolsize=(2, 2)))
-model.add(Convolution2D(32, 32, 4, 4))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(poolsize=(2, 2)))
-model.add(Convolution2D(64, 32, 4, 4))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(poolsize=(2, 2)))
-model.add(Convolution2D(64, 64, 2, 2))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(poolsize=(2, 2)))
-model.add(Convolution2D(64, 64, 2, 2))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(poolsize=(2, 2)))
-model.add(Dropout(0.25))
-
-
-model.add(Flatten())
-model.add(Dense(64*5**2, outsize))
-model.add(Activation('relu'))
-
-
-
-# let's train the model using SGD + momentum (how original).
-#sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-model.compile(loss='mean_squared_error', optimizer='rmsprop')
-#model.compile(loss='categorical_crossentropy', optimizer=sgd
-
-
+else:
+    print "Must run with either 'python cnnMap.py new' or 'python cnnMap.py update'"
+    sys.exit(1)
+    
 
 """ TRAINING """
 
@@ -151,6 +156,7 @@ for sup in range(0,superEpochs):
                 cp.dump(model)        
         
         #Reset the training tensors
+        trainL          = len(trainFs[i*chunkSize:(i+1)*chunkSize])
         numTrainEx      = min(trainL,chunkSize)
         trainImages     = np.zeros((numTrainEx,1,size,size),dtype=np.float)
         trainTargets    = np.zeros((numTrainEx,outsize),dtype=np.float)

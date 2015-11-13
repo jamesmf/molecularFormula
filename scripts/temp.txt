@@ -1,0 +1,2 @@
+Fast op time without openmp 0.000018s with openmp 0.000018s slowdown 1.00
+Slow op time without openmp 0.000366s with openmp 0.000359s speedup 1.02
