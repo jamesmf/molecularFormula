@@ -53,7 +53,7 @@ for i in range(0,100):
             x     = x[0]
             x     = np.where(x<0, 0, x)
             m     = np.max(x)
-            x     = np.where(x>0.1*m,x,0)
+            x     = np.where(x>0.3*m,x,0)
             print x
             plt.imshow(x)
             plt.show()

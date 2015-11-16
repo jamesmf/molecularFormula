@@ -71,12 +71,14 @@ def dumpWeights(model):
         layercount  +=1
 
 
-def testWAverages(direct,ecfps,means):
+def testAverages(direct,ecfps):
+    means = np.mean(ecfps.values(),axis=0)    
+    s   = len(means)
     ld  = listdir(direct)
     shuffle(ld)
     num     = 20000
-    preds   = np.zeros((num,16),dtype=np.float)
-    y       = np.zeros((num,16),dtype=np.float)
+    preds   = np.zeros((num,s),dtype=np.float)
+    y       = np.zeros((num,s),dtype=np.float)
     count   = 0
     for x in ld[:num]:
         CID     = x[:x.find(".png")]
@@ -85,6 +87,25 @@ def testWAverages(direct,ecfps,means):
         count+=1
    
     print "RMSE of guessing: ", np.sqrt(mean_squared_error(y, preds))
+
+
+
+"""Require an argument specifying whether this is an update or a new model"""
+if len(sys.argv) <= 1:
+    print "needs 'update' or 'new' as first argument"
+    sys.exit(1)
+
+if sys.argv[1].lower().strip() == "update":
+    UPDATE     = True    
+    if len(sys.argv) < 4:
+        print "needs image size, layer size as other inputs"
+        sys.exit(1)
+    else:
+        size = int(sys.argv[2])
+        lay1size = int(sys.argv[3])
+        print size, lay1size
+else:
+    UPDATE     = False
 
 
 """Define parameters of the run"""
@@ -104,38 +125,48 @@ DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
 
 shuffle(ld)
 
-trainTestSplit     = 0.80
+trainTestSplit     = 0.90
 
-trainFs = ld[:int(numEx*trainTestSplit)]
-testFs  = ld[int(numEx*trainTestSplit):]
-trainL  = len(trainFs)
-testL   = len(testFs)
+"""Load the train/test split information if update, else split and write out which images are in which dataset"""
+if not UPDATE:
+    trainFs = ld[:int(numEx*trainTestSplit)]
+    testFs  = ld[int(numEx*trainTestSplit):]
+    trainL  = len(trainFs)
+    testL   = len(testFs)
+    with open(folder+"traindata.csv",'wb') as f:
+        f.write('\n'.join(trainFs))
+    with open(folder+"testdata.csv",'wb') as f:        
+        f.write('\n'.join(testFs))
+else:
+    with open(folder+"traindata.csv",'rb') as f:
+        trainFs = f.read().split("\n")
+    with open(folder+"testdata.csv",'rb') as f:        
+        testFs  = f.read().split("\n")
+    
 
 print "number of examples: ", numEx
 print "training examples : ", trainL
 print "test examples : ", testL
 
-batch_size      = 32
-chunkSize       = 2048
-testChunkSize   = 1024
+
+batch_size      = 32            #how many training examples per batch
+chunkSize       = 2048          #how much data to ever load at once      
+testChunkSize   = 1024          #how many examples to evaluate per iteration
 numTrainEx      = min(trainL,chunkSize)
 
-
-ecfps           = getECFPvecs()
+ecfps           = getECFPvecs() #get the ECFP vector for each CID
+testAverages(direct,ecfps)   
     
-outsize         = len(ecfps[ecfps.keys()[0]])
+outsize         = len(ecfps[ecfps.keys()[0]]) #this it the size of the target (# of ECFPs)
 
+"""Initialize empty matrices to hold our images and our target vectors"""
 trainImages     = np.zeros((numTrainEx,1,imdim,imdim),dtype=np.float)
 trainTargets    = np.zeros((numTrainEx,outsize),dtype=np.float)
 testImages      = np.zeros((testChunkSize,1,imdim,imdim),dtype=np.float)
 testTargets     = np.zeros((testChunkSize,outsize),dtype=np.float)
 
 
-
-if len(sys.argv) <= 1:
-    print "needs 'update' or 'new' as first argument"
-    sys.exit(1)
-    
+"""If we are training a new model, define it"""   
 if sys.argv[1].lower().strip() == "new":
     model = Sequential()
     
@@ -170,13 +201,11 @@ if sys.argv[1].lower().strip() == "new":
     
     model.compile(loss='mean_squared_error', optimizer='adadelta')
 
-elif sys.argv[1].lower().strip() == "update":
+
+"""If we are continuing to train an old model, load it"""
+if UPDATE:
     with open(folder+"wholeModel.pickle",'rb') as f:
         model     = cPickle.load(f)
-        
-else:
-    print "needs 'update' or 'new' as first argument"
-    sys.exit(1)
 
 
 
