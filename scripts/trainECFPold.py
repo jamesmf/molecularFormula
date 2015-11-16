@@ -26,6 +26,8 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import SGD, Adadelta, Adagrad
 
 
+sys.setrecursionlimit(10000)
+
 """get the ECFP vectors for training"""
 def getECFPvecs():
     ecfps = {}
@@ -56,7 +58,7 @@ def dumpWeights(model):
             weights     = model.layers[layercount].get_weights()[0]
             size        = len(weights)
             if size < 100:
-                with open("../molecularFormula/layer"+str(layercount)+".pickle",'wb') as f:
+                with open("../ecfp/layer"+str(layercount)+".pickle",'wb') as f:
                     cp = cPickle.Pickler(f)
                     cp.dump(weights)
             else:
@@ -107,9 +109,10 @@ print "training examples : ", trainL
 print "test examples : ", testL
 
 batch_size      = 32
-chunkSize       = 2048
+chunkSize       = 20048
 testChunkSize   = 1024
 numTrainEx      = min(trainL,chunkSize)
+
 
 
 ecfps           = getECFPvecs()
@@ -198,7 +201,7 @@ for sup in range(0,superEpochs):
         
         shuffle(testFs)
         count   = 0
-        for x in testFs[:chunkSize/10]:
+        for x in testFs[:testChunkSize]:
             if x.find(".png") > -1:
                 CID     = x[:x.find(".png")]
                 image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         

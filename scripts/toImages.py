@@ -57,7 +57,6 @@ with open("../data/AID_1996_datatable_all.csv",'rb') as f:
                     CID     = "cid"+sp[2].strip()
                     smiles  = sp[-1]
                     sol     = sp[8]
-                    print CID, sol
                     CIDs.append(CID)
                     sols.append(sol)
                     
@@ -87,7 +86,6 @@ with open("../cidsMF.pickle",'wb') as fout:
     with open("../cidsMF.txt",'rb') as f:
         for x in f:
             CID, counts, mwt    = handleLine(x,reg)
-            print CID, counts
             vec     = np.zeros(len(atomlist))
             for k,v in counts.iteritems():
                 ind     = atomlist.index(k)
@@ -114,9 +112,10 @@ for x in CIDs:
             imgRequest  = urllib2.Request(imgUrl, headers=headers)
             imgData     = urllib2.urlopen(imgRequest).read()
             
-            with open(directory+x+".svg",'wb') as f:
+            with open(directory+x+".png",'wb') as f:
                 f.write(imgData)
         except urllib2.URLError, e:
+            print "oops", x
             cantRender +=1 
         
 print "failed to render ", cantRender, "images"
