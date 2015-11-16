@@ -12,6 +12,8 @@ from skimage.transform import resize
 import numpy as np
 
 from os import listdir
+from os.path import isdir
+from os import mkdir
 from os.path import isfile
 from random import shuffle
 import cPickle
@@ -25,6 +27,8 @@ from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import SGD, Adadelta, Adagrad
 
+
+sys.setrecursionlimit(10000)
 
 """get the ECFP vectors for training"""
 def getECFPvecs():
@@ -56,7 +60,7 @@ def dumpWeights(model):
             weights     = model.layers[layercount].get_weights()[0]
             size        = len(weights)
             if size < 100:
-                with open("../ecfp/layer"+str(layercount)+".pickle",'wb') as f:
+                with open(folder+"layer"+str(layercount)+".pickle",'wb') as f:
                     cp = cPickle.Pickler(f)
                     cp.dump(weights)
             else:
@@ -85,11 +89,16 @@ def testWAverages(direct,ecfps,means):
 
 """Define parameters of the run"""
 size    = 200                               #size of the images
+lay1size= 5                                 #size of the first window
 imdim   = size - 20                         #strip 10 pixels buffer from each size
 direct  = "../data/images"+str(size)+"/"    #directory containing the images
 ld      = listdir(direct)                   #contents of that directory
 numEx   = len(ld)
 
+
+folder  = "../ecfp/"+str(size)+"_"+str(lay1size)+"/"
+if not isdir(folder):
+    mkdir(folder)
 
 DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
 
@@ -130,7 +139,7 @@ if len(sys.argv) <= 1:
 if sys.argv[1].lower().strip() == "new":
     model = Sequential()
     
-    model.add(Convolution2D(32, 1, 10, 10, border_mode='full')) 
+    model.add(Convolution2D(32, 1, lay1size, lay1size, border_mode='full')) 
     model.add(Activation('relu'))
     
     model.add(MaxPooling2D(poolsize=(2, 2)))
@@ -162,7 +171,7 @@ if sys.argv[1].lower().strip() == "new":
     model.compile(loss='mean_squared_error', optimizer='adadelta')
 
 elif sys.argv[1].lower().strip() == "update":
-    with open("../ecfp/wholeModel.pickle",'rb') as f:
+    with open(folder+"wholeModel.pickle",'rb') as f:
         model     = cPickle.load(f)
         
 else:
@@ -209,18 +218,13 @@ for sup in range(0,superEpochs):
         
         preds   = model.predict(testImages)
         RMSE    = np.sqrt(mean_squared_error(testTargets, preds))         
-        print RMSE
-        if RMSE < 300:
-            for ind1 in range(0,len(preds)):
-                if ind1 < 2:
-                    p   = [preds[ind1][ind2] for ind2 in range(0,len(preds[0]))]
-                    t   = [int(testTargets[ind1][ind2]) for ind2 in range(0,len(testTargets[0]))]
-                    print p, t
+        print "RMSE of epoch: ", RMSE
+
         
         if DUMP_WEIGHTS:
             dumpWeights(model)
 
-        with open("../ecfp/wholeModel.pickle", 'wb') as f:
+        with open(folder+"wholeModel.pickle", 'wb') as f:
             cp     = cPickle.Pickler(f)
             cp.dump(model)
 

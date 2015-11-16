@@ -10,7 +10,9 @@ import skimage.io as io
 from skimage.transform import resize 
 import numpy as np
 from os.path import isfile
+import matplotlib.cm as cm
 
+import sys
 from os import listdir
 from random import shuffle
 import cPickle
@@ -34,6 +36,9 @@ elif vecfp == True:
     d     = "../ecfp/layer"
 else:
     d     = "../molecularFormula/layer"
+    
+folder    = sys.argv[1]
+d         = folder+"layer"
 
 """ VISUALIZATION """
 
@@ -43,6 +48,15 @@ for i in range(0,100):
             weights     = cPickle.load(f)
         greymap     = plt.get_cmap('gray')
         size        = len(weights)
+        
+        for x in weights:
+            x     = x[0]
+            x     = np.where(x<0, 0, x)
+            m     = np.max(x)
+            x     = np.where(x>0.1*m,x,0)
+            print x
+            plt.imshow(x)
+            plt.show()
         if size < 100:
             print "visualizing layer ", i
             rows        = size/4
