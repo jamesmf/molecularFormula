@@ -12,6 +12,8 @@ from skimage.transform import resize
 import numpy as np
 
 from os import listdir
+from os.path import isdir
+from os import mkdir
 from os.path import isfile
 from random import shuffle
 import cPickle
@@ -58,7 +60,7 @@ def dumpWeights(model):
             weights     = model.layers[layercount].get_weights()[0]
             size        = len(weights)
             if size < 100:
-                with open("../ecfp/layer"+str(layercount)+".pickle",'wb') as f:
+                with open(folder+"layer"+str(layercount)+".pickle",'wb') as f:
                     cp = cPickle.Pickler(f)
                     cp.dump(weights)
             else:
@@ -69,12 +71,14 @@ def dumpWeights(model):
         layercount  +=1
 
 
-def testWAverages(direct,ecfps,means):
+def testAverages(direct,ecfps):
+    means = np.mean(ecfps.values(),axis=0)    
+    s   = len(means)
     ld  = listdir(direct)
     shuffle(ld)
     num     = 20000
-    preds   = np.zeros((num,16),dtype=np.float)
-    y       = np.zeros((num,16),dtype=np.float)
+    preds   = np.zeros((num,s),dtype=np.float)
+    y       = np.zeros((num,s),dtype=np.float)
     count   = 0
     for x in ld[:num]:
         CID     = x[:x.find(".png")]
@@ -85,55 +89,88 @@ def testWAverages(direct,ecfps,means):
     print "RMSE of guessing: ", np.sqrt(mean_squared_error(y, preds))
 
 
+
+"""Require an argument specifying whether this is an update or a new model"""
+if len(sys.argv) <= 1:
+    print "needs 'update' or 'new' as first argument"
+    sys.exit(1)
+
+if sys.argv[1].lower().strip() == "update":
+    UPDATE     = True    
+    if len(sys.argv) < 4:
+        print "needs image size, layer size as other inputs"
+        sys.exit(1)
+    else:
+        size = int(sys.argv[2])     #size of the images
+        lay1size = int(sys.argv[3]) #size of the first receptive field
+        print size, lay1size
+else:
+    UPDATE     = False
+    size    = 200                               #size of the images
+    lay1size= 5                                 #size of the first receptive field
+
 """Define parameters of the run"""
-size    = 200                               #size of the images
 imdim   = size - 20                         #strip 10 pixels buffer from each size
 direct  = "../data/images"+str(size)+"/"    #directory containing the images
 ld      = listdir(direct)                   #contents of that directory
 numEx   = len(ld)
 
 
+folder  = "../ecfp/"+str(size)+"_"+str(lay1size)+"/"
+if not isdir(folder):
+    mkdir(folder)
+
 DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
 
 shuffle(ld)
 
-trainTestSplit     = 0.80
+trainTestSplit     = 0.90
 
-trainFs = ld[:int(numEx*trainTestSplit)]
-testFs  = ld[int(numEx*trainTestSplit):]
+"""Load the train/test split information if update, else split and write out which images are in which dataset"""
+if not UPDATE:
+    trainFs = ld[:int(numEx*trainTestSplit)]
+    testFs  = ld[int(numEx*trainTestSplit):]
+    with open(folder+"traindata.csv",'wb') as f:
+        f.write('\n'.join(trainFs))
+    with open(folder+"testdata.csv",'wb') as f:        
+        f.write('\n'.join(testFs))
+else:
+    with open(folder+"traindata.csv",'rb') as f:
+        trainFs = f.read().split("\n")
+    with open(folder+"testdata.csv",'rb') as f:        
+        testFs  = f.read().split("\n")
+
+
 trainL  = len(trainFs)
-testL   = len(testFs)
+testL   = len(testFs)    
 
 print "number of examples: ", numEx
 print "training examples : ", trainL
 print "test examples : ", testL
 
-batch_size      = 32
-chunkSize       = 20048
-testChunkSize   = 1024
+
+batch_size      = 32            #how many training examples per batch
+chunkSize       = 50000          #how much data to ever load at once      
+testChunkSize   = 6000          #how many examples to evaluate per iteration
 numTrainEx      = min(trainL,chunkSize)
 
-
-
-ecfps           = getECFPvecs()
+ecfps           = getECFPvecs() #get the ECFP vector for each CID
+testAverages(direct,ecfps)   
     
-outsize         = len(ecfps[ecfps.keys()[0]])
+outsize         = len(ecfps[ecfps.keys()[0]]) #this it the size of the target (# of ECFPs)
 
+"""Initialize empty matrices to hold our images and our target vectors"""
 trainImages     = np.zeros((numTrainEx,1,imdim,imdim),dtype=np.float)
 trainTargets    = np.zeros((numTrainEx,outsize),dtype=np.float)
 testImages      = np.zeros((testChunkSize,1,imdim,imdim),dtype=np.float)
 testTargets     = np.zeros((testChunkSize,outsize),dtype=np.float)
 
 
-
-if len(sys.argv) <= 1:
-    print "needs 'update' or 'new' as first argument"
-    sys.exit(1)
-    
+"""If we are training a new model, define it"""   
 if sys.argv[1].lower().strip() == "new":
     model = Sequential()
     
-    model.add(Convolution2D(32, 1, 10, 10, border_mode='full')) 
+    model.add(Convolution2D(32, 1, lay1size, lay1size, border_mode='full')) 
     model.add(Activation('relu'))
     
     model.add(MaxPooling2D(poolsize=(2, 2)))
@@ -164,13 +201,11 @@ if sys.argv[1].lower().strip() == "new":
     
     model.compile(loss='mean_squared_error', optimizer='adadelta')
 
-elif sys.argv[1].lower().strip() == "update":
-    with open("../ecfp/wholeModel.pickle",'rb') as f:
+
+"""If we are continuing to train an old model, load it"""
+if UPDATE:
+    with open(folder+"wholeModel.pickle",'rb') as f:
         model     = cPickle.load(f)
-        
-else:
-    print "needs 'update' or 'new' as first argument"
-    sys.exit(1)
 
 
 
@@ -201,7 +236,7 @@ for sup in range(0,superEpochs):
         
         shuffle(testFs)
         count   = 0
-        for x in testFs[:testChunkSize]:
+        for x in testFs[:chunkSize/10]:
             if x.find(".png") > -1:
                 CID     = x[:x.find(".png")]
                 image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
@@ -212,18 +247,13 @@ for sup in range(0,superEpochs):
         
         preds   = model.predict(testImages)
         RMSE    = np.sqrt(mean_squared_error(testTargets, preds))         
-        print RMSE
-        if RMSE < 300:
-            for ind1 in range(0,len(preds)):
-                if ind1 < 2:
-                    p   = [preds[ind1][ind2] for ind2 in range(0,len(preds[0]))]
-                    t   = [int(testTargets[ind1][ind2]) for ind2 in range(0,len(testTargets[0]))]
-                    print p, t
+        print "RMSE of epoch: ", RMSE
+
         
         if DUMP_WEIGHTS:
             dumpWeights(model)
 
-        with open("../ecfp/wholeModel.pickle", 'wb') as f:
+        with open(folder+"wholeModel.pickle", 'wb') as f:
             cp     = cPickle.Pickler(f)
             cp.dump(model)
 
