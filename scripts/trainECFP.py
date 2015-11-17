@@ -101,16 +101,15 @@ if sys.argv[1].lower().strip() == "update":
         print "needs image size, layer size as other inputs"
         sys.exit(1)
     else:
-        size = int(sys.argv[2])
-        lay1size = int(sys.argv[3])
+        size = int(sys.argv[2])     #size of the images
+        lay1size = int(sys.argv[3]) #size of the first receptive field
         print size, lay1size
 else:
     UPDATE     = False
-
+    size    = 200                               #size of the images
+    lay1size= 5                                 #size of the first receptive field
 
 """Define parameters of the run"""
-size    = 200                               #size of the images
-lay1size= 5                                 #size of the first window
 imdim   = size - 20                         #strip 10 pixels buffer from each size
 direct  = "../data/images"+str(size)+"/"    #directory containing the images
 ld      = listdir(direct)                   #contents of that directory
@@ -131,8 +130,6 @@ trainTestSplit     = 0.90
 if not UPDATE:
     trainFs = ld[:int(numEx*trainTestSplit)]
     testFs  = ld[int(numEx*trainTestSplit):]
-    trainL  = len(trainFs)
-    testL   = len(testFs)
     with open(folder+"traindata.csv",'wb') as f:
         f.write('\n'.join(trainFs))
     with open(folder+"testdata.csv",'wb') as f:        
@@ -142,7 +139,10 @@ else:
         trainFs = f.read().split("\n")
     with open(folder+"testdata.csv",'rb') as f:        
         testFs  = f.read().split("\n")
-    
+
+
+trainL  = len(trainFs)
+testL   = len(testFs)    
 
 print "number of examples: ", numEx
 print "training examples : ", trainL
@@ -150,8 +150,8 @@ print "test examples : ", testL
 
 
 batch_size      = 32            #how many training examples per batch
-chunkSize       = 2048          #how much data to ever load at once      
-testChunkSize   = 1024          #how many examples to evaluate per iteration
+chunkSize       = 50000          #how much data to ever load at once      
+testChunkSize   = 6000          #how many examples to evaluate per iteration
 numTrainEx      = min(trainL,chunkSize)
 
 ecfps           = getECFPvecs() #get the ECFP vector for each CID
