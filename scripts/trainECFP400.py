@@ -29,7 +29,7 @@ from keras.optimizers import SGD, Adadelta, Adagrad
 
 
 sys.setrecursionlimit(10000)
-
+np.random.seed(0)
 """get the ECFP vectors for training"""
 def getECFPvecs():
     ecfps = {}
@@ -106,7 +106,7 @@ if sys.argv[1].lower().strip() == "update":
         print size, lay1size
 else:
     UPDATE     = False
-    size    = 200                               #size of the images
+    size    = 400                               #size of the images
     lay1size= 5                                 #size of the first receptive field
 
 """Define parameters of the run"""
@@ -118,6 +118,16 @@ numEx   = len(ld)
 
 folder  = "../ecfp/"+str(size)+"_"+str(lay1size)+"/"
 if not isdir(folder):
+    mkdir(folder)
+    
+    
+if (not UPDATE) and (isdir(folder)):
+    i=1
+    oldfolder = folder
+    while isdir(folder):
+        i+=1
+        folder  = oldfolder[:-1]+"_"+str(i)+'/'
+        print folder
     mkdir(folder)
 
 DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization

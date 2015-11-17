@@ -29,6 +29,7 @@ from keras.optimizers import SGD, Adadelta, Adagrad
 
 
 sys.setrecursionlimit(10000)
+np.random.seed(0)
 
 """get the ECFP vectors for training"""
 def getECFPvecs():

@@ -30,6 +30,7 @@ from keras.optimizers import SGD, Adadelta, Adagrad
 
 sys.setrecursionlimit(10000)
 np.random.seed(0)
+
 """get the ECFP vectors for training"""
 def getECFPvecs():
     ecfps = {}
@@ -129,6 +130,8 @@ if (not UPDATE) and (isdir(folder)):
         folder  = oldfolder[:-1]+"_"+str(i)+'/'
         print folder
     mkdir(folder)
+    
+stop = raw_input("Initializing in folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
 
 
 DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
@@ -183,24 +186,30 @@ if sys.argv[1].lower().strip() == "new":
     
     model.add(Convolution2D(32, 1, lay1size, lay1size, border_mode='full')) 
     model.add(Activation('relu'))
-    
-    model.add(MaxPooling2D(poolsize=(3, 3)))
-    
-    model.add(Convolution2D(64, 32, 5, 5))
+
+    model.add(Convolution2D(32, 32, lay1size, lay1size, border_mode='full')) 
     model.add(Activation('relu'))
     
-    model.add(MaxPooling2D(poolsize=(3, 3)))
+    model.add(MaxPooling2D(poolsize=(2, 2)))
     
-#    model.add(Convolution2D(64, 32, 5, 5)) 
-#    model.add(Activation('relu'))
-#    
-#    model.add(MaxPooling2D(poolsize=(2, 2)))
-#    
-#    model.add(Convolution2D(64, 64, 4, 4)) 
-#    model.add(Activation('relu'))
-#    
-#    model.add(MaxPooling2D(poolsize=(2, 2)))
-#    model.add(Dropout(0.25))
+    model.add(Convolution2D(32, 32, 5, 5))
+    model.add(Activation('relu'))
+    
+    model.add(Convolution2D(64, 32, 5, 5)) 
+    model.add(Activation('relu'))    
+    
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    
+    model.add(Convolution2D(64, 64, 5, 5)) 
+    model.add(Activation('relu'))
+    
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    
+    model.add(Convolution2D(64, 64, 4, 4)) 
+    model.add(Activation('relu'))
+    
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    model.add(Dropout(0.25))
     
     model.add(Flatten())
     model.add(Dense(4096, 512, init='normal'))
