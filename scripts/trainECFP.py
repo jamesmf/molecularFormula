@@ -107,7 +107,8 @@ if sys.argv[1].lower().strip() == "update":
 else:
     UPDATE     = False
     size    = 200                               #size of the images
-    lay1size= 5                                 #size of the first receptive field
+    lay1size= 5      
+    depth   = 2                           #size of the first receptive field
 
 """Define parameters of the run"""
 imdim   = size - 20                         #strip 10 pixels buffer from each size
@@ -119,6 +120,16 @@ numEx   = len(ld)
 folder  = "../ecfp/"+str(size)+"_"+str(lay1size)+"/"
 if not isdir(folder):
     mkdir(folder)
+    
+if (not UPDATE) and (isdir(folder)):
+    i=1
+    oldfolder = folder
+    while isdir(folder):
+        i+=1
+        folder  = oldfolder[:-1]+"_"+str(i)+'/'
+        print folder
+    mkdir(folder)
+
 
 DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
 
