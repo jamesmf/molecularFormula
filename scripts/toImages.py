@@ -1,5 +1,7 @@
 
 from os import listdir
+from os import mkdir
+from os.path import isdir
 import numpy as np
 import skimage
 import urllib2
@@ -37,11 +39,14 @@ def handleLine(x,reg):
 timeout = 2
 socket.setdefaulttimeout(timeout)
 
-size        = 200
+size        = 400
 size        = str(size)
 urlbase     = "http://tripod.nih.gov/servlet/renderServletv16/?structure=_REPLACE_&format=png&shadow=false&size="+size+"&standardize=true"
 
 directory   = "../data/images"+size+'/'
+
+if not isdir(directory):
+    mkdir(directory)
 
 
 CIDs    = []
@@ -103,8 +108,11 @@ with open("../data/sols.pickle",'wb') as f:
 
 
 cantRender  = 0
-
+count       = 0
 for x in CIDs:
+    count+=1
+    if count % 1000 == 0:
+        print count
     if not isfile(directory+x+".png"):
         try:
             headers     = {}

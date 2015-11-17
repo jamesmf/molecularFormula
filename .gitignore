@@ -1,7 +1,9 @@
 *data/images*
-*/wholeModel*
+*wholeModel*
 *locations*
 *ECFP.pickle
 *ECFP.txt
 *layer*
 *data.zip
+*traindata*
+*testdata*
