@@ -98,18 +98,20 @@ if len(sys.argv) <= 1:
 
 if sys.argv[1].lower().strip() == "update":
     UPDATE     = True    
-    if len(sys.argv) < 4:
-        print "needs image size, layer size as other inputs"
+    if len(sys.argv) < 5:
+        print "needs image size, layer size, run # as other inputs"
         sys.exit(1)
     else:
         size = int(sys.argv[2])     #size of the images
         lay1size = int(sys.argv[3]) #size of the first receptive field
+        run     = "_"+str(sys.argv[4].strip())
         print size, lay1size
 else:
     UPDATE     = False
     size    = 200                               #size of the images
     lay1size= 5      
     depth   = 2                           #size of the first receptive field
+    run     = ""
 
 """Define parameters of the run"""
 imdim   = size - 20                         #strip 10 pixels buffer from each size
@@ -118,7 +120,7 @@ ld      = listdir(direct)                   #contents of that directory
 numEx   = len(ld)
 
 
-folder  = "../ecfp/"+str(size)+"_"+str(lay1size)+"/"
+folder  = "../ecfp/"+str(size)+"_"+str(lay1size)+run+"/"
 if not isdir(folder):
     mkdir(folder)
     

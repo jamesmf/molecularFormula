@@ -98,18 +98,20 @@ if len(sys.argv) <= 1:
 
 if sys.argv[1].lower().strip() == "update":
     UPDATE     = True    
-    if len(sys.argv) < 4:
-        print "needs image size, layer size as other inputs"
+    if len(sys.argv) < 5:
+        print "needs image size, layer size, run # as other inputs"
         sys.exit(1)
     else:
         size = int(sys.argv[2])     #size of the images
         lay1size = int(sys.argv[3]) #size of the first receptive field
+        run     = "_"+str(sys.argv[4].strip())
         print size, lay1size
 else:
     UPDATE     = False
     size    = 200                               #size of the images
     lay1size= 5      
     depth   = 2                           #size of the first receptive field
+    run     = ""
 
 """Define parameters of the run"""
 imdim   = size - 20                         #strip 10 pixels buffer from each size
@@ -118,7 +120,7 @@ ld      = listdir(direct)                   #contents of that directory
 numEx   = len(ld)
 
 
-folder  = "../ecfp/"+str(size)+"_"+str(lay1size)+"/"
+folder  = "../ecfp/"+str(size)+"_"+str(lay1size)+run+"/"
 if not isdir(folder):
     mkdir(folder)
     
@@ -130,9 +132,11 @@ if (not UPDATE) and (isdir(folder)):
         folder  = oldfolder[:-1]+"_"+str(i)+'/'
         print folder
     mkdir(folder)
-    
-stop = raw_input("Initializing in folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
 
+if UPDATE:     
+    stop = raw_input("Loading from folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
+else:
+    stop = raw_input("Initializing in folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
 
 DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
 
@@ -233,9 +237,10 @@ if UPDATE:
 
     
 numIterations   = trainL/chunkSize + 1
-superEpochs     = 10
+superEpochs     = 100
+RMSE            = 1000000
 for sup in range(0,superEpochs):
-
+    oldRMSE     = RMSE
     print "*"*80
     print "TRUE EPOCH ", sup
     print "*"*80    
@@ -270,12 +275,13 @@ for sup in range(0,superEpochs):
         print "RMSE of epoch: ", RMSE
 
         
-        if DUMP_WEIGHTS:
-            dumpWeights(model)
-
-        with open(folder+"wholeModel.pickle", 'wb') as f:
-            cp     = cPickle.Pickler(f)
-            cp.dump(model)
+        if oldRMSE > RMSE:
+            if DUMP_WEIGHTS:
+                dumpWeights(model)
+    
+            with open(folder+"wholeModel.pickle", 'wb') as f:
+                cp     = cPickle.Pickler(f)
+                cp.dump(model)
 
 del trainTargets, trainImages
 """ END TRAINING """

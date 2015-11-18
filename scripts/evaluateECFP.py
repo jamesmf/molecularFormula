@@ -126,7 +126,7 @@ testImages      = np.zeros((testChunkSize,1,imdim,imdim),dtype=np.float)
 testTargets     = np.zeros((testChunkSize,outsize),dtype=np.float)
 
 
-with open("../ecfp/wholeModel.pickle",'rb') as f:
+with open(sys.argv[1]+"wholeModel.pickle",'rb') as f:
     model     = cPickle.load(f)
 
 
