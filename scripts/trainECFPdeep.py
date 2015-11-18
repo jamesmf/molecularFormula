@@ -239,8 +239,9 @@ if UPDATE:
 numIterations   = trainL/chunkSize + 1
 superEpochs     = 100
 RMSE            = 1000000
+oldRMSE         = 1000000
 for sup in range(0,superEpochs):
-    oldRMSE     = RMSE
+    oldRMSE     = min(oldRMSE,RMSE)
     print "*"*80
     print "TRUE EPOCH ", sup
     print "*"*80    
