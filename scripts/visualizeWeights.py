@@ -26,16 +26,16 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import SGD, Adadelta, Adagrad
 
 
-vmap     = False
-vecfp    = True
-
-if vmap == True:
-    d     = "../map/layer"
-    
-elif vecfp == True:
-    d     = "../ecfp/layer"
-else:
-    d     = "../molecularFormula/layer"
+#vmap     = False
+#vecfp    = True
+#
+#if vmap == True:
+#    d     = "../map/layer"
+#    
+#elif vecfp == True:
+#    d     = "../ecfp/layer"
+#else:
+#    d     = "../molecularFormula/layer"
     
 folder    = sys.argv[1]
 d         = folder+"layer"
