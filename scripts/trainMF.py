@@ -5,6 +5,7 @@ Created on Thu Oct 15 15:22:30 2015
 @author: frickjm
 """
 
+from helperFuncs import *
 
 import matplotlib.pyplot as plt
 import skimage.io as io
@@ -37,24 +38,6 @@ def getTargetMeans(mfs):
 #    stop=raw_input("")
     return x,y
         
-
-
-def dumpWeights(model):     
-    layercount  = 0
-    for layer in model.layers:
-        try:
-            weights     = model.layers[layercount].get_weights()[0]
-            size        = len(weights)
-            if size < 100:
-                with open("../molecularFormula/layer"+str(layercount)+".pickle",'wb') as f:
-                    cp = cPickle.Pickler(f)
-                    cp.dump(weights)
-            else:
-                pass
-                
-        except IndexError:
-            pass
-        layercount  +=1
 
 
 def testWAverages(direct,mfs,means):
