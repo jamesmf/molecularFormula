@@ -133,10 +133,10 @@ if (not UPDATE) and (isdir(folder)):
         print folder
     mkdir(folder)
 
-if UPDATE:     
-    stop = raw_input("Loading from folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
-else:
-    stop = raw_input("Initializing in folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
+#if UPDATE:     
+#    stop = raw_input("Loading from folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
+#else:
+#    stop = raw_input("Initializing in folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
 
 DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
 
