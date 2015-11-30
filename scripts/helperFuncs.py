@@ -85,7 +85,7 @@ def dumpWeights(model):
         
         
         
-def getTrainTestSplit(update,numEx,trainTestSplit):
+def getTrainTestSplit(update,folder,numEx,trainTestSplit):
     if not update:
         trainFs = ld[:int(numEx*trainTestSplit)]
         testFs  = ld[int(numEx*trainTestSplit):]
@@ -128,7 +128,7 @@ def handleArgs(arglist):
 
 
 def defineFolder(outType,size,lay1size,run):
-    folder  = outType+'/'+str(size)+"_"+str(lay1size)+run+"/"
+    folder  = "../"+outType+'/'+str(size)+"_"+str(lay1size)+run+"/"
     if not isdir(folder):
         mkdir(folder)
         
