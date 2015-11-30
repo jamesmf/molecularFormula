@@ -32,27 +32,27 @@ sys.setrecursionlimit(10000)
 np.random.seed(0)
 
 """get the ECFP vectors for training"""
-def getECFPvecs():
-    ecfps = {}
-    if isfile("../cidsECFP.pickle"):
-        with open("../cidsECFP.pickle",'rb') as f:
-            return cPickle.load(f)
-    else:
-        
-        with open("../cidsECFP.txt",'rb') as f:
-            f.readline() #ignore the header line
-            for x in f:
-                sp     = x.split("\t") 
-                #ignore blank lines
-                if len(sp) > 1:
-                    CID         = sp[0]
-                    vec         = np.array([int(x) for x in sp[2][1:-2].split(',')],dtype=np.float)
-                    ecfps[CID]  = vec
-        
-        with open("../cidsECFP.pickle",'wb') as f:
-            cp     = cPickle.Pickler(f)
-            cp.dump(ecfps)
-    return ecfps
+#def getECFPvecs():
+#    ecfps = {}
+#    if isfile("../cidsECFP.pickle"):
+#        with open("../cidsECFP.pickle",'rb') as f:
+#            return cPickle.load(f)
+#    else:
+#        
+#        with open("../cidsECFP.txt",'rb') as f:
+#            f.readline() #ignore the header line
+#            for x in f:
+#                sp     = x.split("\t") 
+#                #ignore blank lines
+#                if len(sp) > 1:
+#                    CID         = sp[0]
+#                    vec         = np.array([int(x) for x in sp[2][1:-2].split(',')],dtype=np.float)
+#                    ecfps[CID]  = vec
+#        
+#        with open("../cidsECFP.pickle",'wb') as f:
+#            cp     = cPickle.Pickler(f)
+#            cp.dump(ecfps)
+#    return ecfps
 
 def dumpWeights(model):     
     layercount  = 0
@@ -90,33 +90,36 @@ def testAverages(direct,ecfps):
     print "RMSE of guessing: ", np.sqrt(mean_squared_error(y, preds))
 
 
+"""Require an argument specifying whether this is an update or a new model, parse input"""
+update, size, lay1size, run     = helperFuncs.handleArgs(sys.argv)
 
-"""Require an argument specifying whether this is an update or a new model"""
-if len(sys.argv) <= 1:
-    print "needs 'update' or 'new' as first argument"
-    sys.exit(1)
 
-if sys.argv[1].lower().strip() == "update":
-    UPDATE     = True    
-    if len(sys.argv) < 5:
-        print "needs image size, layer size, run # as other inputs"
-        sys.exit(1)
-    else:
-        size = int(sys.argv[2])     #size of the images
-        lay1size = int(sys.argv[3]) #size of the first receptive field
-        run     = "_"+str(sys.argv[4].strip())
-        print size, lay1size
-else:
-    UPDATE     = False
-    size    = 200                               #size of the images
-    lay1size= 5      
-    depth   = 2                           #size of the first receptive field
-    run     = ""
+#if len(sys.argv) <= 1:
+#    print "needs 'update' or 'new' as first argument"
+#    sys.exit(1)
+#
+#if sys.argv[1].lower().strip() == "update":
+#    UPDATE     = True    
+#    if len(sys.argv) < 5:
+#        print "needs image size, layer size, run # as other inputs"
+#        sys.exit(1)
+#    else:
+#        size = int(sys.argv[2])     #size of the images
+#        lay1size = int(sys.argv[3]) #size of the first receptive field
+#        run     = "_"+str(sys.argv[4].strip())
+#        print size, lay1size
+#else:
+#    UPDATE     = False
+#    size    = 200                               #size of the images
+#    lay1size= 5      
+#    depth   = 2                           #size of the first receptive field
+#    run     = ""
 
 """Define parameters of the run"""
 imdim   = size - 20                         #strip 10 pixels buffer from each size
 direct  = "../data/images"+str(size)+"/"    #directory containing the images
 ld      = listdir(direct)                   #contents of that directory
+<<<<<<< HEAD
 numEx   = len(ld)
 
 
@@ -137,43 +140,66 @@ if (not UPDATE) and (isdir(folder)):
 #    stop = raw_input("Loading from folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
 #else:
 #    stop = raw_input("Initializing in folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
+=======
+shuffle(ld)                                 #shuffle the image list for randomness
+numEx   = len(ld)                           #number of images in the directory
+outType = "ecfp"                            #what the CNN is predicting
+DUMP_WEIGHTS = True                         #will we dump the weights of conv layers for visualization
+trainTestSplit   = 0.90                     #percentage of data to use as training data
+batch_size      = 32                        #how many training examples per batch
+chunkSize       = 50000                     #how much data to ever load at once      
+testChunkSize   = 6000                      #how many examples to evaluate per iteration
 
-DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
+"""Define the folder where the model will be stored based on the input arguments"""
+folder     = helperFuncs.defineFolder(outType,size,lay1size,run)
+#folder  = "../ecfp/"+str(size)+"_"+str(lay1size)+run+"/"
+#if not isdir(folder):
+#    mkdir(folder)
+#    
+#if (not UPDATE) and (isdir(folder)):
+#    i=1
+#    oldfolder = folder
+#    while isdir(folder):
+#        i+=1
+#        folder  = oldfolder[:-1]+"_"+str(i)+'/'
+#        print folder
+#    mkdir(folder)
 
-shuffle(ld)
+if update:     
+    stop = raw_input("Loading from folder "+folder+" : Hit enter to proceed or ctrl+C to cancel")
+else:
+    print "Initializing in folder "+folder
+>>>>>>> cd661ec010aa416cb7ef5ac50005e52f4277e42e
 
-trainTestSplit     = 0.90
+
+
 
 """Load the train/test split information if update, else split and write out which images are in which dataset"""
-if not UPDATE:
-    trainFs = ld[:int(numEx*trainTestSplit)]
-    testFs  = ld[int(numEx*trainTestSplit):]
-    with open(folder+"traindata.csv",'wb') as f:
-        f.write('\n'.join(trainFs))
-    with open(folder+"testdata.csv",'wb') as f:        
-        f.write('\n'.join(testFs))
-else:
-    with open(folder+"traindata.csv",'rb') as f:
-        trainFs = f.read().split("\n")
-    with open(folder+"testdata.csv",'rb') as f:        
-        testFs  = f.read().split("\n")
-
-
+trainFs, testFs     = helperFuncs.getTrainTestSplit(update)
 trainL  = len(trainFs)
-testL   = len(testFs)    
+testL   = len(testFs)
+#if not UPDATE:
+#    trainFs = ld[:int(numEx*trainTestSplit)]
+#    testFs  = ld[int(numEx*trainTestSplit):]
+#    with open(folder+"traindata.csv",'wb') as f:
+#        f.write('\n'.join(trainFs))
+#    with open(folder+"testdata.csv",'wb') as f:        
+#        f.write('\n'.join(testFs))
+#else:
+#    with open(folder+"traindata.csv",'rb') as f:
+#        trainFs = f.read().split("\n")
+#    with open(folder+"testdata.csv",'rb') as f:        
+#        testFs  = f.read().split("\n")
 
 print "number of examples: ", numEx
 print "training examples : ", trainL
 print "test examples : ", testL
 
 
-batch_size      = 32            #how many training examples per batch
-chunkSize       = 50000          #how much data to ever load at once      
-testChunkSize   = 6000          #how many examples to evaluate per iteration
 numTrainEx      = min(trainL,chunkSize)
 
-ecfps           = getECFPvecs() #get the ECFP vector for each CID
-testAverages(direct,ecfps)   
+ecfps           = helperFuncs.getECFPTargets() #get the ECFP vector for each CID
+#testAverages(direct,ecfps)   # determind the RMSE of guessing the mean
     
 outsize         = len(ecfps[ecfps.keys()[0]]) #this it the size of the target (# of ECFPs)
 
@@ -283,9 +309,5 @@ for sup in range(0,superEpochs):
             with open(folder+"wholeModel.pickle", 'wb') as f:
                 cp     = cPickle.Pickler(f)
                 cp.dump(model)
-
-del trainTargets, trainImages
-""" END TRAINING """
-
 
 

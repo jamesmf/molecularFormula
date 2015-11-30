@@ -82,5 +82,63 @@ def dumpWeights(model):
         except IndexError:
             pass
         layercount  +=1
+        
+        
+        
+def getTrainTestSplit(update,numEx,trainTestSplit):
+    if not update:
+        trainFs = ld[:int(numEx*trainTestSplit)]
+        testFs  = ld[int(numEx*trainTestSplit):]
+        with open(folder+"traindata.csv",'wb') as f:
+            f.write('\n'.join(trainFs))
+        with open(folder+"testdata.csv",'wb') as f:        
+            f.write('\n'.join(testFs))
+    else:
+        with open(folder+"traindata.csv",'rb') as f:
+            trainFs = f.read().split("\n")
+        with open(folder+"testdata.csv",'rb') as f:        
+            testFs  = f.read().split("\n")
+            
+    return trainFs, testFs
     
     
+def handleArgs(arglist):
+    if len(arglist) <= 1:
+        print "needs 'update' or 'new' as first argument"
+        sys.exit(1)
+
+    if arglist[1].lower().strip() == "update":
+        update     = True    
+        if len(arglist) < 5:
+            print "needs image size, layer size, run # as other inputs"
+            sys.exit(1)
+        else:
+            size = int(arglist[2])     #size of the images
+            lay1size = int(arglist[3]) #size of the first receptive field
+            run     = "_"+str(arglist[4].strip())
+            print size, lay1size
+    else:
+        update     = False
+        size    = 200                               #size of the images
+        lay1size= 5                                #size of the first receptive field
+        run     = ""
+        
+    return update, size, lay1size, run
+
+
+
+def defineFolder(outType,size,lay1size,run):
+    folder  = outType+'/'+str(size)+"_"+str(lay1size)+run+"/"
+    if not isdir(folder):
+        mkdir(folder)
+        
+    if (run == "") and (isdir(folder)):
+        i=1
+        oldfolder = folder
+        while isdir(folder):
+            i+=1
+            folder  = oldfolder[:-1]+"_"+str(i)+'/'
+            print folder
+        mkdir(folder)
+    return folder
+            
