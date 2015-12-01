@@ -41,7 +41,7 @@ direct          = "../data/images"+str(size)+"/"    #directory containing the im
 ld              = listdir(direct)                   #contents of that directory
 numEx           = len(ld)
 batch_size      = 32
-testChunkSize   = 100
+testChunkSize   = 1000
 
 
 sols            = getSolubilityTargets()
@@ -90,21 +90,21 @@ if RMSE < 300:
     for ind1 in range(0,len(preds)):
         if ind1 < 100:
 
-            true      = testTargets[ind1][0] > 10
-            false     = not true
-            pos       = preds[ind1][0] > 10
-            neg       = not pos
+            sol          = testTargets[ind1][0] > 10
+            notSol      = not sol
+            predSol     = preds[ind1][0] > 10
+            predNotSol   = not predSol
             
-            if (true and pos):
+            if (sol and predSol):
                 TP+=1
                 category = "TP"
-            elif (false and pos):
+            elif (notSol and predSol):
                 FP+=1
                 category = "FP"
-            elif (true and neg):
+            elif (notSol and predNotSol):
                 TN+=1
                 category = "TN"
-            elif (false and neg):
+            elif (sol and predNotSol):
                 FN+=1
                 category = "FN"
 
@@ -115,3 +115,8 @@ print "FP", FP
 print "TN", TN
 print "FN", FN
 
+sensitivity     = TP*1. / (TP + FN)
+specificity     = TN*1. / (TN + FP)
+print sensitivity, specificity
+GMean           = np.sqrt(sensitivity*specificity)
+print GMean
