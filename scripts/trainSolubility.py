@@ -123,7 +123,7 @@ outType = "solubility"                      #what the CNN is predicting
 DUMP_WEIGHTS = True                         #will we dump the weights of conv layers for visualization
 trainTestSplit   = 0.90                     #percentage of data to use as training data
 batch_size      = 32                        #how many training examples per batch
-chunkSize       = 5000                      #how much data to ever load at once      
+chunkSize       = 50000                     #how much data to ever load at once      
 testChunkSize   = 5000                      #how many examples to evaluate per iteration
 
 """Define the folder where the model will be stored based on the input arguments"""
@@ -264,9 +264,15 @@ for sup in range(0,superEpochs):
             if DUMP_WEIGHTS:
                 dumpWeights(model)
     
-            with open(folder+"wholeModel.pickle", 'wb') as f:
+            with open(folder+"bestModel.pickle", 'wb') as f:
                 cp     = cPickle.Pickler(f)
                 cp.dump(model)        
+
+        else:
+            with open(folder+"wholeModel.pickle", 'wb') as f:
+                cp     = cPickle.Pickler(f)
+                cp.dump(model) 
+            
 
 
     shuffle(testFs)
