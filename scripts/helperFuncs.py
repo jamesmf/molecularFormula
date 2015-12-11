@@ -85,14 +85,17 @@ def dumpWeights(model):
         
         
         
-def getTrainTestSplit(update,folder,numEx,trainTestSplit):
+def getTrainTestSplit(update,folder,numEx="",trainTestSplit="",ld=""):
     if not update:
-        trainFs = ld[:int(numEx*trainTestSplit)]
-        testFs  = ld[int(numEx*trainTestSplit):]
-        with open(folder+"traindata.csv",'wb') as f:
-            f.write('\n'.join(trainFs))
-        with open(folder+"testdata.csv",'wb') as f:        
-            f.write('\n'.join(testFs))
+        try:
+            trainFs = ld[:int(numEx*trainTestSplit)]
+            testFs  = ld[int(numEx*trainTestSplit):]
+            with open(folder+"traindata.csv",'wb') as f:
+                f.write('\n'.join(trainFs))
+            with open(folder+"testdata.csv",'wb') as f:        
+                f.write('\n'.join(testFs))
+        except:
+            print "required input to getTrainTestSplit if not updating:\nupdate,folder,numEx,trainTestSplit,ld"
     else:
         with open(folder+"traindata.csv",'rb') as f:
             trainFs = f.read().split("\n")
@@ -107,16 +110,27 @@ def handleArgs(arglist):
         print "needs 'update' or 'new' as first argument"
         sys.exit(1)
 
-    if arglist[1].lower().strip() == "update":
+    if not (arglist[1].lower().strip() == "new"):
         update     = True    
-        if len(arglist) < 5:
-            print "needs image size, layer size, run # as other inputs"
+        if len(arglist) < 2:
+            print "needs either 'new' or folder as input"
             sys.exit(1)
         else:
-            size = int(arglist[2])     #size of the images
-            lay1size = int(arglist[3]) #size of the first receptive field
-            run     = "_"+str(arglist[4].strip())
-            print size, lay1size
+            folder  = arglist[1]
+            if folder[-1] == "/":
+                folder = folder[:-1]
+            f1      = folder[folder.rfind("/")+1:]
+            f2      = f1[:f1.find("_")]
+            f3      = f1[f1.find("_")+1:]   
+            size    = int(f2)                    #size of the images
+            
+            if f3.find("_") > -1:
+                lay1size    = int(f3[:f3.find("_")])
+                run         = f3[f3.find("_")+1:]
+            else:
+                lay1size    = int(f3)
+                run         = ""
+            print size, lay1size, run
     else:
         update     = False
         size    = 200                               #size of the images
@@ -128,6 +142,9 @@ def handleArgs(arglist):
 
 
 def defineFolder(outType,size,lay1size,run):
+    if run != '':
+        run     = "_"+run
+    
     folder  = "../"+outType+'/'+str(size)+"_"+str(lay1size)+run+"/"
     if not isdir(folder):
         mkdir(folder)

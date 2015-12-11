@@ -33,26 +33,30 @@ def getRank(cid,vec,ecfps):
 
     tosort  = []    
     for k,vec2 in ecfps.iteritems():
-        euc     = distance.euclidean(vec,vec2)
+        #euc     = distance.euclidean(vec,vec2)
         cos     = distance.cosine(vec, vec2)
-        KL1     = entropy(vec,vec2)
-        KL2     = entropy(vec2,vec)
+        #KL1     = entropy(vec,vec2)
+        #KL2     = entropy(vec2,vec)
         
-        row     = [k, euc, cos, KL1, KL2]
+        #row     = [k, euc, cos, KL1, KL2]        
+        row     = [k, cos]        
         tosort.append(row)
+      
         
     data    = np.array(tosort)    
-    sEuc    = data[np.argsort(data[:,1])]
-    sCos    = data[np.argsort(data[:,2])]
-    sKL1    = data[np.argsort(data[:,3])]
-    sKL2    = data[np.argsort(data[:,4])]  
+    sCos    = data[np.argsort(data[:,1])]
+    #sEuc    = data[np.argsort(data[:,1])]
+    #sCos    = data[np.argsort(data[:,2])]
+    #sKL1    = data[np.argsort(data[:,3])]
+    #sKL2    = data[np.argsort(data[:,4])]  
 
-    e1  = list(sEuc[:,0]).index(cid)      
+    #e1  = list(sEuc[:,0]).index(cid)      
     c   = list(sCos[:,0]).index(cid)
-    k1  = list(sKL1[:,0]).index(cid)
-    k2  = list(sKL2[:,0]).index(cid)
+    #k1  = list(sKL1[:,0]).index(cid)
+    #k2  = list(sKL2[:,0]).index(cid)
     
-    return [e1, c, k1, k2]
+    return c
+    #return [e1, c, k1, k2]
     
     
 def printFormula(p,t,atomlist,cid):
@@ -121,75 +125,79 @@ def testWAverages(direct,ecfps):
     print "RMSE of guessing: ", np.sqrt(mean_squared_error(y, preds))
 
 
-"""Define parameters of the run"""
-size    = 200                               #size of the images
-imdim   = size - 20                         #strip 10 pixels buffer from each size
-direct  = "../data/images"+str(size)+"/"    #directory containing the images
-ld      = listdir(direct)                   #contents of that directory
-numEx   = len(ld)
-
-
-DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
-
-shuffle(ld)
-
-trainTestSplit     = 0.80
-
-with open(sys.argv[1]+"testdata.csv",'rb') as f:
-    testFs  = [pn for pn in f.read().split("\n") if pn != '']
-testL   = len(testFs)
-
-print "number of examples: ", numEx
-print "test examples : ", testL
-
-batch_size      = 32
-chunkSize       = 2048
-testChunkSize   = testL
-numTestEx      = min(testL,testChunkSize)
-
-
-ecfps           = getECFPvecs()
-atomlist        = getAtomList()
+def main():
+    """Define parameters of the run"""
+    size    = 200                               #size of the images
+    imdim   = size - 20                         #strip 10 pixels buffer from each size
+    direct  = "../data/images"+str(size)+"/"    #directory containing the images
+    ld      = listdir(direct)                   #contents of that directory
+    numEx   = len(ld)
     
-outsize         = len(ecfps[ecfps.keys()[0]])
-
-testImages      = np.zeros((testChunkSize,1,imdim,imdim),dtype=np.float)
-testTargets     = np.zeros((testChunkSize,outsize),dtype=np.float)
-
-
-with open(sys.argv[1]+"wholeModel.pickle",'rb') as f:
-    model     = cPickle.load(f)
-
-
-numIterations = 1
-for i in range(0,numIterations):
-    shuffle(testFs)
-    count    = 0
-    cids     = []
-    while count < testChunkSize:    
-        for x in testFs:        
-            if x.find(".png") > -1:
-                CID     = x[:x.find(".png")]
-                cids.append(CID)
-                image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
-                image   = np.where(image > 0.1,1.0,0.0)
-                testImages[count,0,:,:]    = image
-                testTargets[count]         = ecfps[CID]
-                count +=1
     
-    preds   = model.predict(testImages)
-    RMSE    = np.sqrt(mean_squared_error(testTargets, preds)) 
-    ranks   = []        
-    print RMSE
-    if RMSE < 300:
-        for ind1 in range(0,len(preds)):
-            p   = [preds[ind1][ind2] for ind2 in range(0,len(preds[0]))]
-            t   = [int(testTargets[ind1][ind2]) for ind2 in range(0,len(testTargets[0]))]
-            printFormula(p,t,atomlist,cids[ind1])
-            ranks.append(getRank(cids[ind1],p,ecfps))
-            print ranks[ind1]
+    DUMP_WEIGHTS = True  # will we dump the weights of conv layers for visualization
+    
+    shuffle(ld)
+    
+    trainTestSplit     = 0.80
+    
+    with open(sys.argv[1]+"testdata.csv",'rb') as f:
+        testFs  = [pn for pn in f.read().split("\n") if pn != '']
+    testL   = len(testFs)
+    
+    print "number of examples: ", numEx
+    print "test examples : ", testL
+    
+    batch_size      = 32
+    chunkSize       = 2048
+    testChunkSize   = testL
+    numTestEx      = min(testL,testChunkSize)
+    
+    
+    ecfps           = getECFPvecs()
+    atomlist        = getAtomList()
+        
+    outsize         = len(ecfps[ecfps.keys()[0]])
+    
+    testImages      = np.zeros((testChunkSize,1,imdim,imdim),dtype=np.float)
+    testTargets     = np.zeros((testChunkSize,outsize),dtype=np.float)
+    
+    
+    with open(sys.argv[1]+"wholeModel.pickle",'rb') as f:
+        model     = cPickle.load(f)
+    
+    
+    numIterations = 1
+    for i in range(0,numIterations):
+        shuffle(testFs)
+        count    = 0
+        cids     = []
+        while count < testChunkSize:    
+            for x in testFs:        
+                if x.find(".png") > -1:
+                    CID     = x[:x.find(".png")]
+                    cids.append(CID)
+                    image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
+                    image   = np.where(image > 0.1,1.0,0.0)
+                    testImages[count,0,:,:]    = image
+                    testTargets[count]         = ecfps[CID]
+                    count +=1
+        
+        preds   = model.predict(testImages)
+        RMSE    = np.sqrt(mean_squared_error(testTargets, preds)) 
+        ranks   = []        
+        print RMSE
+        if RMSE < 300:
+            for ind1 in range(0,len(preds)):
+                p   = [preds[ind1][ind2] for ind2 in range(0,len(preds[0]))]
+                t   = [int(testTargets[ind1][ind2]) for ind2 in range(0,len(testTargets[0]))]
+                #printFormula(p,t,atomlist,cids[ind1])
+                ranks.append(getRank(cids[ind1],p,ecfps))
+                print ranks[ind1]
+    print np.mean(ranks)
+    with open("~/CHECKME.txt",'wb') as f:
+        f.write('\n'.join(ranks))
+    
 
-
-r   = np.array(ranks)
-print np.mean(r,axis=0)
-
+    
+if __name__ == "__main__":
+    main()
