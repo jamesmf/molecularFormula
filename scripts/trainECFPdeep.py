@@ -257,7 +257,7 @@ for sup in range(0,superEpochs):
             if x.find(".png") > -1:
                 CID     = x[:x.find(".png")]
                 image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
-                image   = np.where(image > 0.1,1.0,0.0)
+                #image   = np.where(image > 0.1,1.0,0.0)
                 trainImages[count,0,:,:]    = image
                 trainTargets[count]         = ecfps[CID]
                 count +=1
@@ -271,7 +271,7 @@ for sup in range(0,superEpochs):
             if x.find(".png") > -1:
                 CID     = x[:x.find(".png")]
                 image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
-                image   = np.where(image > 0.1,1.0,0.0)
+                #image   = np.where(image > 0.1,1.0,0.0)
                 testImages[count,0,:,:]    = image
                 testTargets[count]         = ecfps[CID]
                 count +=1

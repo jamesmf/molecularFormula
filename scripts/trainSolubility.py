@@ -88,29 +88,7 @@ def testAverages(direct,targets):
 
 """Require an argument specifying whether this is an update or a new model, parse input"""
 update, size, lay1size, run     = helperFuncs.handleArgs(sys.argv)
-#if len(sys.argv) <= 1:
-#    print "needs 'update' or 'new' as first argument"
-#    sys.exit(1)
-#
-#
-#"""If we are continuing to train a model, require size and input size params"""
-#if sys.argv[1].lower().strip() == "update":
-#    UPDATE     = True    
-#    if len(sys.argv) < 4:
-#        print "needs image size, layer size as other inputs"
-#        sys.exit(1)
-#    else:
-#        size = int(sys.argv[2])     #size of the images
-#        lay1size = int(sys.argv[3]) #size of the first receptive field
-#        print size, lay1size
-#        
-#   
-#else:
-#    """If this is a new model, define the model below"""   
-#    UPDATE  = False
-#    size    = 200                               #size of the images
-#    lay1size= 5      
-#    depth   = 2                           #size of the first receptive field
+
 
 
 """Define parameters of the run"""
@@ -129,38 +107,6 @@ testChunkSize   = 5000                      #how many examples to evaluate per i
 """Define the folder where the model will be stored based on the input arguments"""
 folder     = helperFuncs.defineFolder(outType,size,lay1size,run)
 
-
-#if not isdir(folder):
-#    mkdir(folder)
-#    
-#if (not UPDATE) and (isdir(folder)):
-#    i=1
-#    oldfolder = folder
-#    while isdir(folder):
-#        i+=1
-#        folder  = oldfolder[:-1]+"_"+str(i)+'/'
-#        print folder
-#    mkdir(folder)
-#
-#
-#
-#
-#shuffle(ld)  #shuffle the examples
-
-
-#"""Load the train/test split information if update, else split and write out which images are in which dataset"""
-#if not UPDATE:
-#    trainFs = ld[:int(numEx*trainTestSplit)]
-#    testFs  = ld[int(numEx*trainTestSplit):]
-#    with open(folder+"traindata.csv",'wb') as f:
-#        f.write('\n'.join(trainFs))
-#    with open(folder+"testdata.csv",'wb') as f:        
-#        f.write('\n'.join(testFs))
-#else:
-#    with open(folder+"traindata.csv",'rb') as f:
-#        trainFs = f.read().split("\n")
-#    with open(folder+"testdata.csv",'rb') as f:        
-#        testFs  = f.read().split("\n")
 
 """Load the train/test split information if update, else split and write out which images are in which dataset"""
 trainFs, testFs     = helperFuncs.getTrainTestSplit(update,folder,numEx,trainTestSplit)
@@ -194,27 +140,33 @@ if sys.argv[1].lower().strip() == "new":
     
     model.add(Convolution2D(32, 1, lay1size, lay1size, border_mode='full')) 
     model.add(Activation('relu'))
-    
-    model.add(Convolution2D(32, 32, 5, 5))
+
+    model.add(Convolution2D(32, 32, lay1size, lay1size, border_mode='full')) 
     model.add(Activation('relu'))
     
     model.add(MaxPooling2D(poolsize=(2, 2)))
     
-    model.add(Convolution2D(32, 32, 2, 2))
+    model.add(Convolution2D(32, 32, 5, 5))
     model.add(Activation('relu'))
     
-    model.add(Convolution2D(64, 32, 2, 2)) 
-    model.add(Activation('relu'))
+    model.add(Convolution2D(64, 32, 5, 5)) 
+    model.add(Activation('relu'))    
     
-    model.add(MaxPooling2D(poolsize=(3, 3)))
+    model.add(MaxPooling2D(poolsize=(2, 2)))
     
     model.add(Convolution2D(64, 64, 5, 5)) 
     model.add(Activation('relu'))
     
     model.add(MaxPooling2D(poolsize=(2, 2)))
     
+    model.add(Convolution2D(64, 64, 4, 4)) 
+    model.add(Activation('relu'))
+    
+    model.add(MaxPooling2D(poolsize=(2, 2)))
+    model.add(Dropout(0.25))
+    
     model.add(Flatten())
-    model.add(Dense(9216, 512, init='normal'))
+    model.add(Dense(4096, 512, init='normal'))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
     
@@ -222,6 +174,8 @@ if sys.argv[1].lower().strip() == "new":
     
     
     model.compile(loss='mean_squared_error', optimizer='adadelta')
+
+    model.set_weights(helperFuncs.getWeights("../OCRfeatures/300_5_1/wholeModel.pickle"))
 
 
 """If we are continuing to train an old model, load it"""
@@ -251,7 +205,7 @@ for sup in range(0,superEpochs):
             if x.find(".png") > -1:
                 CID     = x[:x.find(".png")]
                 image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
-                image   = np.where(image > 0.1,1.0,0.0)
+                #image   = np.where(image > 0.1,1.0,0.0)
                 trainImages[count,0,:,:]    = image
                 trainTargets[count]         = targets[CID]
                 count +=1
@@ -281,7 +235,7 @@ for sup in range(0,superEpochs):
         if x.find(".png") > -1:
             CID     = x[:x.find(".png")]
             image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
-            image   = np.where(image > 0.1,1.0,0.0)
+            #image   = np.where(image > 0.1,1.0,0.0)
             testImages[count,0,:,:]    = image
             testTargets[count]         = targets[CID]
             count +=1

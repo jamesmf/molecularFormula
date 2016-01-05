@@ -50,20 +50,38 @@ def getECFPTargets():
             cp.dump(ecfps)
     return ecfps
     
-    
+
 """get the solubility for training"""
+def getOCRTargets():
+    with open("../data/cidsFeatureVectors.pickle",'rb') as f:
+        d =  cPickle.load(f)
+    with open("../data/cidsFeatureKeys.txt",'rb') as f:
+        keys    = [x for x in f.read().split(",") if x != '']
+    return d, keys
+
+def getOCRScaledTargets():
+   with open("../data/cidsFeaturesScaled.pickle",'rb') as f:
+	d = cPickle.load(f)
+   with open("../data/cidsFeatureKeys.txt",'rb') as f:
+	keys = [x for x in f.read().split(",") if x != '']
+   return d, keys    
+    
 def getSolubilityTargets():
     out     = {}
     with open("../data/sols.pickle",'rb') as f:
         d =  cPickle.load(f)
-    for k,v in d.iteritems():
-        out[k] = [float(v)]
-    return out
+        for k,v in d.iteritems():
+            out[k] = [float(v)]
+    return out   
+
+def getMeansStds():
+    with open("../data/cidsMeansStds.pickle",'rb') as f:
+        ret     = cPickle.load(f)
+    return ret
     
-    
-    
-    
-    
+def getWeights(model):
+    with open(model,'rb') as f:
+        return cPickle.load(f).get_weights()
     
 
 def dumpWeights(model):     
@@ -105,7 +123,7 @@ def getTrainTestSplit(update,folder,numEx="",trainTestSplit="",ld=""):
     return trainFs, testFs
     
     
-def handleArgs(arglist):
+def handleArgs(arglist,size=200):
     if len(arglist) <= 1:
         print "needs 'update' or 'new' as first argument"
         sys.exit(1)
@@ -133,29 +151,32 @@ def handleArgs(arglist):
             print size, lay1size, run
     else:
         update     = False
-        size    = 200                               #size of the images
+        size    = size                               #size of the images
         lay1size= 5                                #size of the first receptive field
-        run     = ""
+        run     = "1"
+
+    print "update: ", update, "size: ", size, "run: ", run
         
     return update, size, lay1size, run
 
 
 
-def defineFolder(outType,size,lay1size,run):
+def defineFolder(outType,size,lay1size,run,update):
     if run != '':
         run     = "_"+run
     
     folder  = "../"+outType+'/'+str(size)+"_"+str(lay1size)+run+"/"
-    if not isdir(folder):
-        mkdir(folder)
         
-    if (run == "") and (isdir(folder)):
+    if (run == "_1") and (isdir(folder)) and (not update):
         i=1
-        oldfolder = folder
+        oldfolder = folder[:folder.rfind("_")+1]
         while isdir(folder):
             i+=1
             folder  = oldfolder[:-1]+"_"+str(i)+'/'
             print folder
+    if not update:
         mkdir(folder)
+        mkdir(folder+"/tempTrain")
+        mkdir(folder+"/tempTest")
     return folder
             

@@ -94,4 +94,23 @@ for cid in CIDs:
             pass
     else:
         pass
+
+ld  = listdir("../data/supp/")
+for fi in ld:
     
+    with open("../data/supp/"+fi,'rb') as f:
+        f.readline()
+        rows    = [r for r in f.read().split("\n") if r != '']
+        for r in rows:
+            sp  = r.strip().split("\t")
+            cid = sp[0]
+            if not isfile(SDdir+cid+".sdf"):
+                print cid
+                try:
+                    url         = urlbase.replace("_REPLACE_",cid)
+                    request     = urllib2.Request(url, headers=headers)
+                    data        = urllib2.urlopen(request).read()
+                    with open(SDdir+cid+".sdf",'wb') as f:
+                        f.write(data)
+                except urllib2.URLError:
+                    "failed, dawwwwwg!"

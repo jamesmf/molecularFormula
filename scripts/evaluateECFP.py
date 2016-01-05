@@ -177,7 +177,7 @@ def main():
                     CID     = x[:x.find(".png")]
                     cids.append(CID)
                     image   = io.imread(direct+x,as_grey=True)[10:-10,10:-10]         
-                    image   = np.where(image > 0.1,1.0,0.0)
+                    #image   = np.where(image > 0.1,1.0,0.0)
                     testImages[count,0,:,:]    = image
                     testTargets[count]         = ecfps[CID]
                     count +=1
