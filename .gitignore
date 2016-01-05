@@ -8,5 +8,13 @@
 *traindata*
 *testdata*
 *nohup*
-*SDF/*
+*.sdf
 *data400.zip
+*Model*
+*INN*
+*solubility/*
+*ecfp/*
+*OCRfeatures/*
+*evaluation/*
+*data/cidsFeature*
+*data/sdf.zip
