@@ -12,6 +12,7 @@ import sys
 from os import listdir
 import matplotlib.pyplot as plt
 import skimage.io as io
+from skimage import filters
 from skimage.transform import resize 
 import numpy as np
 from tabulate import tabulate
@@ -23,8 +24,11 @@ from sklearn.metrics import mean_squared_error
 def convertIt(image):
     image   = np.ones(image.shape)*255 - image
     image   = np.divide(image,255)
-    return np.dot(image[...,:3], [0.299, 0.587, 0.144])
+    #return np.dot(image[...,:3], [0.299, 0.587, 0.144])
+    return image
 
+def minusOnes(image):
+    return np.ones((image.shape)) - image
 
 def myResize(image,size):
     #print "input pixel sum", np.sum(image)
@@ -82,6 +86,13 @@ def printFormula(p,t,atomlist,cid,means):
             tab.append([atomlist[ind],int(t[ind]),int(np.round(p[ind])),p[ind],means[ind]])
     print tabulate(tab,headers=headers)
 
+def printFormula2(p,atomlist):
+    headers     = ["FEATURE","PREDICTED","FLOAT"]
+    tab         = []
+    for ind in range(0,len(atomlist)):
+        tab.append([atomlist[ind],int(np.round(p[ind])),p[ind]])
+    print tabulate(tab,headers=headers)
+
 def getSize(folder):
     fold 	= folder[folder[-1].rfind("/")+1:]
     fold 	= fold[:fold.find("_")]
@@ -99,6 +110,55 @@ imdim   = size-20
 OCRTargets, labels  = getOCRTargets()
 means,stds  = getMeansStds()
     
+    
+if False:
+    ld  = listdir("/home/test/usan/")
+    images  = np.zeros((1,1,imdim,imdim),dtype=np.float)
+    for x in ld:
+        print x
+        try:
+            CID     = x
+            print "reading in"
+            #image   = misc.imread("../data/INNimages/"+x,flatten=1)
+            #image   = Image.open(+x)
+            #image   = image.convert("LA", image)
+            image   = io.imread("/home/test/usan/"+x,as_grey=True)
+            image   = minusOnes(image)
+            print "numpying"
+            image   = np.array(image)
+            #image   = convertIt(image)
+            print "resizing"
+            print image.shape
+            image   = myResize(image,imdim)
+            #image   = putInSize(image,imdim)
+            image   = np.where(image >0.05, 1.,0)
+            #image   = filters.gaussian_filter(image,0.2)
+            #print "binarizing"
+            print image.shape
+            #image   = np.where(image>0.2,1,0)
+#            for countzor in range(0,image.shape[0]):
+#                print image[countzor,:]
+#                stop=raw_input("")
+            #image   = np.where(image > 0.1,1.0,0.0)
+            #trainTarget        = OCRfeatures[CID]
+            #notScaled       = OCRTargets[CID]
+            images[0,0,:,:]     = image
+            pred    = model.predict(images)
+            
+            plt.imshow(image)
+            plt.savefig("../evaluation/"+x+".jpg",format="jpg")
+            stop=raw_input("")
+    #        print "Label","Actual", "Pred", "Mean"
+    #        for i in range(0,len(pred[0])):
+    #            if (notScaled[i] > 0.01) or (pred[0][i] > 0.5):
+    #                print labels[i], notScaled[i], pred[0][i], means[i]
+            printFormula2(pred[0],labels)
+            #RMSE    = np.sqrt(mean_squared_error(notScaled, pred[0]))         
+            #print "RMSE: ", RMSE      
+    
+        except (KeyError,ValueError) as e:
+            print e    
+        
 if len(sys.argv) < 3:    
         
     ld  = listdir(sys.argv[1]+"/tempTest/")
@@ -134,6 +194,7 @@ if len(sys.argv) < 3:
         
 else:
     
+
     ld  = listdir("../data/INNimages/")
     images  = np.zeros((1,1,imdim,imdim),dtype=np.float)
     for x in ld:
@@ -147,11 +208,14 @@ else:
             print "numpying"
             image   = np.array(image)
             image   = convertIt(image)
+            print image[int(image.shape[0]/2.),:]
+            stop=raw_input("stop")
             print "resizing"
             print image.shape
             image   = myResize(image,imdim)
             #image   = putInSize(image,imdim)
             image   = np.where(image >0.05, 1.,0)
+            image   = filters.gaussian_filter(image,0.2)
             print "binarizing"
             print image.shape
             #image   = np.where(image>0.2,1,0)

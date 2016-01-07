@@ -33,7 +33,7 @@ def makeSDFtrain(train,indir):
             t   = file("../data/SDF/"+fi).read()
             f.write(t)
 
-def makeSDFtest(train,indir):
+def makeSDFtest(test,indir):
     files   = test[:100]
 
     with open(indir+"tempSDF.sdf",'wb') as f:    
@@ -43,11 +43,11 @@ def makeSDFtest(train,indir):
             f.write(t)
 
 def callToRenderer(parameters,indir,outdir):
-    subprocess.call(["java","-jar","../renderer.jar",parameters,outdir])
+    subprocess.call(["java","-jar","../renderer2.jar",parameters,outdir])
 
 
 def getParameters(indir,size=200):
-    ps = "structure="+indir+"tempSDF.sdf&standardize=true&shadow=false&preset=DEFAULT&size="+str(size)+"&presetName=&format=png&amap=null&presetMOD="
+    ps = "structure="+indir+"tempSDF.sdf&standardize=true&shadow=false&preset=DEFAULT&size="+str(size)+"&format=png&amap=null_ANTIALIAS_&presetMOD="
     """parameters to define:
         PROP_KEY_BOND_STEREO_DASH_NUMBER from 2 to 8
         PROP_KEY_BOND_DOUBLE_GAP_FRACTION from .1 to .4
@@ -97,12 +97,13 @@ def getParameters(indir,size=200):
         count+=1
         
     jstr    = json.dumps(d)
-    ps2     = ps+jstr
-
+    antiAlias     = "&antialias="+str(np.random.rand() > 0.50).lower()
         
     
-    
-    
+    ps2     = ps+jstr
+    ps2     = ps2.replace("_ANTIALIAS_",antiAlias).replace(' ','').replace('"',"'")
+    print ps2
+    stop=raw_input("")
     return ps2
 
 
@@ -125,32 +126,33 @@ if not isdir(indir+"tempTrain/"):
 #    subprocess.call("cp ../renderer.jar "+indir+"tempTrain/",shell=True)
 #    subprocess.call("cp ../renderer.jar "+indir+"tempTest/",shell=True)    
 
-    
+print "reading Train/Test files"   
 train   = [x for x in file(indir+"traindata.csv").read().split("\n") if x != '']    
 test    = [x for x in file(indir+"testdata.csv").read().split("\n") if x != '']    
 
 while True:
-    ld  = listdir(indir+"tempTrain/")
-    
+    #ld  = listdir(indir+"tempTrain/")
+    ld  = listdir("temp/")
+
     if len(ld) > IN_VALUE:
         time.sleep(1)
-	print "sleeping because Train folder full      \r",
+        print "sleeping because Train folder full      \r",
     else:
         shuffle(train)
         makeSDFtrain(train,indir)
         parameters  = getParameters(indir,size=size)
-        callToRenderer(parameters,indir,indir+"tempTrain")
+        #callToRenderer(parameters,indir,indir+"tempTrain")
+        callToRenderer(parameters,indir,"temp/")        
         
-        
-    ld2 = listdir(indir+"tempTest/")
-    if len(ld2) > IN_VALUE/10:
-        time.sleep(1)
-	print "sleeping because Test folder full       \r",
-    else:
-	print len(ld2)
-        shuffle(test)
-        makeSDFtest(test,indir)
-        parameters  = getParameters(indir,size=size)
-        callToRenderer(parameters,indir,indir+"tempTest")
+#    ld2 = listdir(indir+"tempTest/")
+#    if len(ld2) > IN_VALUE/10:
+#        time.sleep(1)
+#	print "sleeping because Test folder full       \r",
+#    else:
+#	print len(ld2)
+#        shuffle(test)
+#        makeSDFtest(test,indir)
+#        parameters  = getParameters(indir,size=size)
+#        callToRenderer(parameters,indir,indir+"tempTest")
         
     

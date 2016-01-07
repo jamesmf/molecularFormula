@@ -10,6 +10,7 @@ from helperFuncs import defineFolder, handleArgs, getTrainTestSplit, getOCRTarge
 
 import matplotlib.pyplot as plt
 import skimage.io as io
+from skimage import filters
 from skimage.transform import resize 
 import numpy as np
 
@@ -71,7 +72,7 @@ def testAverages(direct,OCRfeatures):
 
 
 """Require an argument specifying whether this is an update or a new model, parse input"""
-update, size, lay1size, run     = handleArgs(sys.argv,size=400)
+update, size, lay1size, run     = handleArgs(sys.argv,size=300)
 
 
 """Define parameters of the run"""
@@ -84,11 +85,11 @@ outType         = "OCRfeatures"             #what the CNN is predicting
 DUMP_WEIGHTS    = True                      #will we dump the weights of conv layers for visualization
 trainTestSplit  = 0.90                      #percentage of data to use as training data
 batch_size      = 32                        #how many training examples per batch
-chunkSize       = 200                     #how much data to ever load at once      
-testChunkSize   = 20                      #how many examples to evaluate per iteration
+chunkSize       = 50000                     #how much data to ever load at once      
+testChunkSize   = 6000                      #how many examples to evaluate per iteration
 
 """Define the folder where the model will be stored based on the input arguments"""
-folder          = defineFolder(outType,size,lay1size,run)
+folder          = defineFolder(outType,size,lay1size,run,update)
 print folder
 trainDirect     = folder+"tempTrain/"
 testDirect      = folder+"tempTest/"
@@ -121,7 +122,7 @@ outsize             = len(OCRfeatures[OCRfeatures.keys()[0]]) #this it the size 
 
 """If we are training a new model, define it"""   
 print "loading model"
-if sys.argv[1].lower().strip() == "new":
+if not update:
     model = Sequential()
     
     model.add(Convolution2D(16, 1, lay1size, lay1size, border_mode='full')) 
@@ -129,7 +130,7 @@ if sys.argv[1].lower().strip() == "new":
 
     model.add(MaxPooling2D(poolsize=(2,2)))
 
-    model.add(Convolution2D(32, 32, lay1size, lay1size, border_mode='full')) 
+    model.add(Convolution2D(32, 16, lay1size, lay1size, border_mode='full')) 
     model.add(Activation('relu'))
     
     model.add(MaxPooling2D(poolsize=(3, 3)))
@@ -140,26 +141,16 @@ if sys.argv[1].lower().strip() == "new":
     model.add(Convolution2D(64, 32, 5, 5)) 
     model.add(Activation('relu'))    
     
-    model.add(MaxPooling2D(poolsize=(2, 2)))
+    model.add(MaxPooling2D(poolsize=(3, 3)))
     
     model.add(Convolution2D(64, 64, 5, 5)) 
     model.add(Activation('relu'))
     
-    model.add(MaxPooling2D(poolsize=(3, 3)))
-    
-    model.add(Convolution2D(64, 64, 4, 4)) 
-    model.add(Activation('relu'))
-    
     model.add(MaxPooling2D(poolsize=(2, 2)))
     model.add(Dropout(0.25))
-
-    model.add(Convolution2D(128,64,5,5))
-    model.add(Activation('relu'))
-    
-    model.add(MaxPooling2D(poolsize=(2,2)))
     
     model.add(Flatten())
-    model.add(Dense(4096, 512, init='normal'))
+    model.add(Dense(3200, 512, init='normal'))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
     
@@ -253,7 +244,7 @@ for sup in range(0,superEpochs):
 		try:
                     CID     = x[:x.find(".sdf")]
                     image   = io.imread(testDirect+x,as_grey=True)[10:-10,10:-10]         
-                    #image   = np.where(image > 0.1,1.0,0.0)
+                    image   = np.where(image > 0.1,1.0,0.0)
                     testImages[added,0,:,:]    = image
                     testTargets[added]         = OCRfeatures[CID]
                     subprocess.call("rm "+testDirect+x,shell=True)
