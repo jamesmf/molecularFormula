@@ -78,47 +78,34 @@ outsize             = len(features[features.keys()[0]])  #this it the size of th
 
 model = Sequential()
 
-model.add(Convolution2D(16, 1, 8, 8, border_mode='full')) 
+model.add(Convolution2D(16, 1, 10, 10, border_mode='full')) 
 model.add(Activation('relu'))
 
-model.add(MaxPooling2D(poolsize=(2,2)))
+model.add(MaxPooling2D(poolsize=(4,4)))
 
-model.add(Convolution2D(32, 16, 5, 5, border_mode='full')) 
+model.add(Convolution2D(32, 16, 8, 8, border_mode='full')) 
 model.add(Activation('relu'))
 
+model.add(MaxPooling2D(poolsize=(3, 3)))
 
-model.add(MaxPooling2D(poolsize=(2, 2)))
-#model.add(Dropout(0.25))
-
-model.add(Convolution2D(32, 32, 5, 5))
+model.add(Convolution2D(64, 32, 5, 5))
 model.add(Activation('relu'))
 
-model.add(Convolution2D(64, 32, 5, 5)) 
+model.add(Convolution2D(128, 64, 5, 5)) 
 model.add(Activation('relu'))    
 
 model.add(MaxPooling2D(poolsize=(3, 3)))
 model.add(Dropout(0.25))
 
-model.add(Convolution2D(64, 64, 5, 5)) 
-model.add(Activation('relu'))
-
-model.add(MaxPooling2D(poolsize=(2,2)))
-
-model.add(Convolution2D(128, 64, 4, 4)) 
-model.add(Activation('relu'))
-
-model.add(MaxPooling2D(poolsize=(2, 2)))
-model.add(Dropout(0.25))
-
 model.add(Flatten())
-model.add(Dense(1152, 512, init='normal'))
+model.add(Dense(4608, 512, init='normal'))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
 
 model.add(Dense(512, outsize, init='normal'))
 
 
-model.compile(loss='mean_squared_error', optimizer='rmsprop')
+model.compile(loss='mean_squared_error', optimizer='adadelta')
 
 #    model.set_weights(getWeights("../OCRfeatures/200_5_3/bestModel.pickle"))
 
