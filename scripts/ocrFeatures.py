@@ -10,7 +10,7 @@ from operator import itemgetter
 
 MAX_SSSR_FEATURE_SIZE = 7   #Only include features for SSSRs of size < X
 MAX_ATOM_COUNT_STDDEV = 2   #Only include molecules w/ (atom count) < (mean) + MAX_ATOM*(std_dev)
-FEATURE_FREQ_CUTOFF   = 10  #Only include features that occur more than 20 times in the data
+FEATURE_FREQ_CUTOFF   = 100 #Only include features that occur more than N times in the data
 
 #load the dictionary pickled by 'fromSDFs.py'
 with open("../data/cidsFEATURES.pickle",'rb') as f:  
@@ -154,7 +154,7 @@ for k,v in featuresOut.iteritems():
     featuresScaled[k] = np.divide(v,stds) 
 
 
-with open("../data/cidsFeaturesScalled.pickle",'wb') as f:
+with open("../data/cidsFeaturesScaled.pickle",'wb') as f:
     cp = cPickle.Pickler(f)
     cp.dump(featuresScaled)
 

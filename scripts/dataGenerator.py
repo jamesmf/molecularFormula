@@ -34,9 +34,9 @@ import helperFuncs
 #            t   = file("../data/SDF/"+fi).read()
 #            f.write(t)
 
-size, indir, maximum, modifyAntiAlias, resize = helperFuncs.dataGenArgs(sys.argv[1:])
+size, indir, maximum, modifyAntiAlias, resize, targetType = helperFuncs.dataGenArgs(sys.argv[1:])
 
-
+targets, labels     = helperFuncs.getTargets(targetType)
 
 while not isfile(indir+"traindata.csv"):
     time.sleep(0.1)
@@ -48,8 +48,9 @@ if not isdir(indir+"tempTrain/"):
        
 
 print "reading Train/Test files"   
-train   = [x for x in file(indir+"traindata.csv").read().split("\n") if x != '']    
-test    = [x for x in file(indir+"testdata.csv").read().split("\n") if x != '']    
+
+train   = [x for x in file(indir+"traindata.csv").read().split("\n") if x.replace('.sdf','') in targets]    
+test    = [x for x in file(indir+"testdata.csv").read().split("\n") if x.replace('.sdf','') in targets]    
 
 while True:
     ld  = listdir(indir+"tempTrain/")

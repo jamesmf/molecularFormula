@@ -11,6 +11,7 @@ from skimage.transform import resize
 import numpy as np
 from os.path import isfile
 import matplotlib.cm as cm
+import scipy.misc as mi
 
 import sys
 from os import listdir
@@ -49,33 +50,34 @@ for i in range(0,100):
         greymap     = plt.get_cmap('gray')
         size        = len(weights)
         
-        for x in weights:
-            x     = x[0]
-            x     = np.where(x<0, 0, x)
-            m     = np.max(x)
-            x     = np.where(x>0.3*m,x,0)
-            print x
-            plt.imshow(x)
-            plt.show()
+#        for x in weights:
+#            x     = x[0]
+#            x     = np.where(x<0, 0, x)
+#            m     = np.max(x)
+#            x     = np.where(x>0.3*m,x,0)
+#            print x
+#            plt.imshow(x)
+#            plt.show()
         if size < 100:
             print "visualizing layer ", i
             rows        = size/4
             #f, axarr    = plt.subplots(rows,8)
             count       = 0
             for x in weights:
-                row     = count/4
-                col     = count%4
-                p   = x[0,:,:]
-                plt.subplot(rows,rows,row*4+col+1)
-                plt.axis('off')
-                plt.imshow(p,cmap = greymap)
-                #axarr[row,col].axis('off')
-                #axarr[row,col].imshow(p,cmap = greymap)
+                mi.imsave(d+"layer_"+str(i)+"_neuron_"+str(count)+".jpg", x[0,:,:])
+#                row     = count/4
+#                col     = count%4
+#                p   = x[0,:,:]
+#                plt.subplot(rows,rows,row*4+col+1)
+#                plt.axis('off')
+#                plt.imshow(p,cmap = greymap)
+#                #axarr[row,col].axis('off')
+#                #axarr[row,col].imshow(p,cmap = greymap)
                 count   +=1
                 
             plt.suptitle("Layer "+str(i))
             plt.savefig(d+str(i)+".jpg")
-    
+#    
 
 
         

@@ -6,6 +6,7 @@ Created on Tue Dec 15 13:44:36 2015
 """
 
 from helperFuncs import getOCRScaledTargets, getOCRTargets, getMeansStds
+import helperFuncs
 
 import cPickle
 import sys
@@ -13,10 +14,14 @@ from os import listdir
 import matplotlib.pyplot as plt
 import skimage.io as io
 from skimage import filters
-from skimage.transform import resize 
+#from skimage.transform import resize 
 import numpy as np
 from tabulate import tabulate
-from skimage.transform import resize
+#from skimage.transform import resize
+#import scipy.misc.imresize as resize
+#import scipy.misc.imsave as imsave
+from scipy.misc import imresize as resize
+from scipy.misc import imsave as imsave
 from PIL import Image
 from scipy import misc
 from sklearn.metrics import mean_squared_error
@@ -45,7 +50,7 @@ def myResize(image,size):
         ratio   = size*1./curr_y
         xsize   = int(ratio*curr_x)
         offset  = (size-xsize)/2
-        im2     = resize(image,(size,xsize))
+        im2     = resize(image,(size,xsize),interp="bicubic")
         #print im2.shape
         output[difference:difference+size , difference+offset:difference+offset+xsize]   = im2
         
@@ -54,7 +59,7 @@ def myResize(image,size):
         ratio   = size*1./curr_x
         ysize   = int(ratio*curr_y)
         offset  = (size-ysize)/2
-        im2     = resize(image,(ysize,size))
+        im2     = resize(image,(ysize,size),interp="bicubic")
         print im2.shape
         output[difference+offset:difference+offset+ysize,difference:difference+size]   = im2
     #print output.shape
@@ -105,13 +110,13 @@ with open(sys.argv[1]+"wholeModel.pickle",'rb') as f:
     model   = cPickle.load(f)
     
 size 	= int(getSize(sys.argv[1]))
-imdim   = size-20
+imdim   = size
 #OCRfeatures, labels     = getOCRScaledTargets()
 OCRTargets, labels  = getOCRTargets()
 means,stds  = getMeansStds()
     
     
-if False:
+if True:
     ld  = listdir("/home/test/usan/")
     images  = np.zeros((1,1,imdim,imdim),dtype=np.float)
     for x in ld:
@@ -119,9 +124,6 @@ if False:
         try:
             CID     = x
             print "reading in"
-            #image   = misc.imread("../data/INNimages/"+x,flatten=1)
-            #image   = Image.open(+x)
-            #image   = image.convert("LA", image)
             image   = io.imread("/home/test/usan/"+x,as_grey=True)
             image   = minusOnes(image)
             print "numpying"
@@ -129,9 +131,15 @@ if False:
             #image   = convertIt(image)
             print "resizing"
             print image.shape
-            image   = myResize(image,imdim)
+            
+            image   = helperFuncs.processImage(None,"/",True,0.3,"random",300,noise=True,image=image)            
+            
+#            image   = myResize(image,imdim)
             #image   = putInSize(image,imdim)
-            image   = np.where(image >0.05, 1.,0)
+#            image   = np.where(image >0.05, 1.,0)
+#            image   = filters.gaussian_filter(image,0.2)
+#            image   = 0.05*np.random.rand(image.shape[0], image.shape[1]) + image
+
             #image   = filters.gaussian_filter(image,0.2)
             #print "binarizing"
             print image.shape
@@ -143,10 +151,13 @@ if False:
             #trainTarget        = OCRfeatures[CID]
             #notScaled       = OCRTargets[CID]
             images[0,0,:,:]     = image
-            pred    = model.predict(images)
+
             
-            plt.imshow(image)
-            plt.savefig("../evaluation/"+x+".jpg",format="jpg")
+            #plt.imshow(image)
+            #plt.savefig("../evaluation/"+x+".jpg",format="jpg")
+            imsave("../evaluation/"+x+".jpg",image)  
+            
+            pred    = model.predict(images)
             stop=raw_input("")
     #        print "Label","Actual", "Pred", "Mean"
     #        for i in range(0,len(pred[0])):

@@ -5,31 +5,27 @@ Created on Wed Nov 18 14:46:08 2015
 @author: frickjm
 """
 
-import subprocess
-import skimage
-from skimage.transform import resize
-from skimage import io
+from skimage import filters
+from scipy.misc import imresize as resize
+from scipy import misc
 import numpy as np
-import json
-import getopt
+from keras.models import model_from_json
+import h5py
 
-from os import listdir
+import getopt
 from os.path import isdir
 from os import mkdir
 from os.path import isfile
-from random import shuffle
 import cPickle
 import sys
+import json
+import subprocess
 
-from sklearn.metrics import mean_squared_error
-
-from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers.convolutional import Convolution2D, MaxPooling2D
-from keras.optimizers import SGD, Adadelta, Adagrad
-
-
+#import skimage
+#from skimage import io
+#from os import listdir
+#from random import shuffle
+#from sklearn.metrics import mean_squared_error
 
 
 """*******************************************************************"""            
@@ -48,6 +44,15 @@ def getTargets(targetType):
         return getOCRScaledTargets()
     elif targetType == "solubility":
         return getSolubilityTargets()
+    elif targetType == "simple":
+        return getSimpleTargets()
+        
+def getSimpleTargets():
+    with open("../data/simpleOCRfeatures.pickle",'rb') as f:
+        d =  cPickle.load(f)
+    with open("../data/cidsFeatureKeys.txt",'rb') as f:
+        keys    = [x for x in f.read().split(",") if x != '']
+    return d, keys    
 
 """get the ECFP vectors for training"""
 def getECFPTargets():
@@ -229,7 +234,7 @@ def defineFolder(update,outType,size,run):
 """*******************************************************************"""
 def dataGenArgs(argv):
     try:
-       opts, args = getopt.getopt(argv,"s:d:m:a:r:",["size=","indir=","max=","antiAlias","resize"])
+       opts, args = getopt.getopt(argv,"s:d:m:a:r:t:",["size=","indir=","max=","antiAlias","resize","targetType="])
     except getopt.GetoptError:
        print 'dataGenerator.py -s <imageSize> -d <directory> -m <max number of images to create>'
        sys.exit(2)
@@ -249,13 +254,15 @@ def dataGenArgs(argv):
             modifyAntiAlias = (int(arg) == 1)
         elif opt in ("-r", "--resize"):
             resize = (int(arg) == 1)
+        elif opt in ("-t", "--targetType"):
+            targetType = arg
           
     print "Pixel Size" , size
     print 'Model Directory: ', indir
     print 'Maximum Number of Images to Create: ', maximum
     print 'Turn on/off Anti-Aliasing: ', modifyAntiAlias
     print "Resize Images (if False, image size = size): ", resize
-    return size, indir, maximum, modifyAntiAlias, resize
+    return size, indir, maximum, modifyAntiAlias, resize, targetType
 
 
 def callToRenderer(parameters,indir,outdir):
@@ -287,9 +294,9 @@ def getParameters(indir,modifySize=True,modifyAntiAlias=True,size=200):
         ]
         
     #Choose values for renderer - normally distributed at means[i], capped by [mins[i], maxs[i]]
-    mins    = [2.0, 0.1, 0.4, 0.12, 0.06, 0.16]
+    mins    = [2.0, 0.1, 0.5, 0.12, 0.06, 0.16]
     maxs    = [8.0, 0.4, 0.9, 0.36, 0.15, 0.5]    
-    means   = [4,0.25,0.65,0.24,0.1,0.33]
+    means   = [4,0.25,0.7,0.24,0.1,0.33]
     stds    = [1.5,0.075,0.15,0.06,0.027,0.09]
     rands   = np.random.rand(9)
     vals1   = [np.random.normal(means[i],stds[i]) for i in range(0,6)]
@@ -309,7 +316,11 @@ def getParameters(indir,modifySize=True,modifyAntiAlias=True,size=200):
     #print values
     
     if modifySize:
-        sizeStr     = "size="+str(int(150 +(size-150)*np.random.rand()))
+        sizeRange   = 300
+        sizeMin     = 100
+        #sizeMax     = sizeMin + sizeRange
+        sizeVal     = int(sizeMin + sizeRange*np.random.rand())
+        sizeStr     = "size="+str(sizeVal)
     else:
         sizeStr     = "size="+str(size)
     
@@ -352,10 +363,40 @@ def makeSDFtest(test,indir):
             
             
 """*******************************************************************"""            
-"""                     Model Definition                              """
+"""                       Saving Loading                              """
 """*******************************************************************"""
-
-
+def saveModel(model,location):
+    jsonstring  = model.to_json()
+    with open(location+".json",'wb') as f:
+        f.write(jsonstring)
+    model.save_weights(location+"weights.h5",overwrite=True)
+    
+def loadModel(location):
+    with open(location+".json",'rb') as f:
+        json_string     = f.read()
+    model = model_from_json(json_string)
+    model.load_weights(location+"weights.h5")
+    return model
+    
+def saveData(data,location,form):
+    if form == "h5":
+        h5f     = h5py.File(location+".h5",'w')
+        h5f.create_dataset('data1',data=data)
+        h5f.close()
+    else:
+        with open(location+".pickle",'wb') as f:
+            cp  = cPickle.Pickler(f)
+            cp.dump(data)
+            
+def loadData(location,form):
+    if form == "h5":
+        h5f     = h5py.File(location+".h5",'r')
+        data    = h5f['data1'][:]
+        h5f.close()
+        return data
+    else:
+        with open(location+".pickle",'wb') as f:
+            return cPickle.load(f)
 
 """*******************************************************************"""            
 """                     Data Processing                               """
@@ -399,21 +440,95 @@ def dataProcessorArgs(argv):
     return size, indir, binarize, blur, padding, targetType
     
 
-def processImage(CID,folder,binarize,blur,padding,size,noise=False):
+def processImage(CID,folder,binarize,blur,padding,size,noise=False,image=None):
     
-    image   = io.imread(folder+CID+".sdf",as_grey=True)
+    if not (CID is None):
+        image   = misc.imread(folder+CID+".sdf",flatten=True)
+        #misc.imsave("../"+CID+"temp.jpg",image)
+    else:
+        CID     = "temp"
+
+    #print image.shape, "image read in"
+    image   = imStandardize(image)
+    #misc.imsave("../"+CID+"temp2.jpg",image)
+    #print "image standardized"
     output  = np.zeros((size,size))
-    if binarize:
-        image   = np.where(image > 0.1,1.0,0.0)
+
+
     if blur > 0:
-        image   = skimage.filters.gaussian_filter(image,blur)
+        image   = filters.gaussian_filter(image,blur)
+        #print "image blurred"
     if padding == "random":
-        pad     = int(np.random.rand()*50)
-        image   = resize(image,(size-pad,size-pad))
+        image   = removePadding(image)
+        pad     = int(np.random.rand()*20)
+        image   = myResize(image,size-pad)
+        #print "padding added"
+    if binarize:
+        image   = np.where(image > 0.2,1.0,0.0)
+        #print "binarized"
+        
         
     d   = int(pad/2)
     output [d:d+image.shape[0],d:d+image.shape[1]]  = image
     if noise:
-        output  = 0.05*np.random.rand(output.shape[0], output.shape[1]) + output        
+        output  = 0.10*np.max(image)*np.random.rand(output.shape[0], output.shape[1]) + output        
         #output   = np.where(output == 0., 0.1*np.random.rand(),output)
     return output
+    
+def removePadding(image):
+    #print image.shape
+    ydim    = np.sum(image,axis=1)
+    nonz    = np.nonzero(ydim)
+    starty  = np.min(nonz)
+    endy    = np.max(nonz)
+    xdim    = np.sum(image,axis=0)
+    nonz    = np.nonzero(xdim)
+    startx  = np.min(nonz)
+    endx    = np.max(nonz)
+   # print starty, endy, startx, endx
+    image   = image[starty:endy,startx:endx]
+    return image
+
+def myResize(image,size):
+
+    if np.max(image.shape) >= size:
+        interp  = "bilinear"
+    else:
+        interp  = "bicubic"
+
+    output          = np.zeros((size,size))
+    #difference      = int(size-size*0.75)/2
+    #size            = int(size*0.75)
+    curr_y, curr_x  = image.shape
+    
+
+    if curr_y > curr_x:
+        #the image is wide
+        ratio   = size*1./curr_y
+        xsize   = int(ratio*curr_x)
+        offset  = (size-xsize)/2
+        im2     = resize(image,(size,xsize),interp=interp)
+        #print im2.shape
+        output[:,offset:offset+xsize]   = im2
+        
+    else:
+        #The image is tall
+        ratio   = size*1./curr_x
+        ysize   = int(ratio*curr_y)
+        offset  = (size-ysize)/2
+        im2     = resize(image,(ysize,size),interp=interp)
+        #print im2.shape
+        output[offset:offset+ysize,:]   = im2
+    #print output.shape
+    #print "output pixel sum", np.sum(output)
+    return output
+    
+def imStandardize(image):
+    #print np.mean(image), "im mean"
+    if np.max(image) > 2:
+        image   = image / 255.
+    if np.mean(image) > 0.99:
+        #print np.mean(image), "new mean"
+        image = np.ones((image.shape)) - image
+    #print "final mean:", np.mean(image)
+    return image

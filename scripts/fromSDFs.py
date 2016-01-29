@@ -39,6 +39,7 @@ for fi in ld:
     if s[0] is not None:
         try:
             mol     = s[0]
+            Chem.Kekulize(mol)
             bonds   = mol.GetBonds()
             #print Chem.MolToSmiles(mol)
             """Loop over the bonds to determine bond type, and atoms paired"""

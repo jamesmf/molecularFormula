@@ -30,7 +30,8 @@ import cPickle
 import sys
 import subprocess
 import time
-
+from scipy.spatial import distance
+#from scipy.stats import entropy
 from sklearn.metrics import mean_squared_error
 
 
@@ -49,6 +50,29 @@ def printFormula(p,t,cid,atomlist,means):
             tab.append([atomlist[ind],int(t[ind]),int(np.round(p[ind])),p[ind],means[ind]])
     print tabulate(tab,headers=headers)
 
+def printFormula(p,t,cid,atomlist,means):
+    print '\t',cid
+    headers     = ["FEATURE","ACTUAL","PREDICTED","FLOAT","MEAN"]
+    tab         = []
+    for ind in range(0,len(atomlist)):
+        if t[ind] > .1:
+            printIt = True
+            #tab.append([atomlist[ind],int(t[ind]),int(np.round(p[ind])),p[ind],means[ind]])
+            
+        elif np.round(p[ind]) > 0:
+            printIt = True
+            #tab.append([atomlist[ind],int(t[ind]),int(np.round(p[ind])),p[ind],means[ind]])
+        else:
+            printIt = False
+            
+        if printIt:
+            name    = atomlist[ind]
+            real    = int(t[ind])
+            
+            tab.append()
+    print tabulate(tab,headers=headers)
+
+
 def printFormula2(p,atomlist):
     headers     = ["FEATURE","PREDICTED","FLOAT"]
     tab         = []
@@ -57,6 +81,20 @@ def printFormula2(p,atomlist):
     print tabulate(tab,headers=headers)
 
 
+
+
+def getRank(cid,vec,allVec):
+
+    tosort  = []    
+    for k,vec2 in allVec.iteritems():
+        cos     = distance.cosine(vec, vec2)
+        row     = [k, cos]        
+        tosort.append(row)
+           
+    data    = np.array(tosort)    
+    sCos    = data[np.argsort(data[:,1])]   
+    c   = list(sCos[:,0]).index(cid)
+    return c, sCos[:10]
 
 
 """Require an argument specifying whether this is an update or a new model, parse input"""
@@ -88,12 +126,13 @@ means,stds          = helperFuncs.getMeansStds()
 
 
 """load model"""
-with open(folder+"wholeModel.pickle",'rb') as f:
-    model     = cPickle.load(f)
+#with open(folder+"bestModel.pickle",'rb') as f:
+#    model     = cPickle.load(f)
+
+model   = helperFuncs.loadModel(folder+"wholeModel")
 
 
-
-while not isfile(testNP+"Xtest.pickle"):
+while not isfile(testNP+"Xtest.h5"):
     print "sleeping because Test folder empty             \r",
     time.sleep(1.)
 print ""
@@ -103,11 +142,13 @@ print "Loading np test arrays"
 loadedUp    = False
 while not loadedUp:       
     try:
-        with open(testNP+"Xtest.pickle",'rb') as f:
-            testImages     = cPickle.load(f)
-    
-        with open(testNP+"ytest.pickle",'rb') as f:
-            testTargets    = cPickle.load(f)
+#        with open(testNP+"Xtest.pickle",'rb') as f:
+#            testImages     = cPickle.load(f)
+#    
+#        with open(testNP+"ytest.pickle",'rb') as f:
+#            testTargets    = cPickle.load(f)
+        testImages  = helperFuncs.loadData(testNP+"Xtest",'h5')
+        testTargets = helperFuncs.loadData(testNP+"ytest",'h5')            
             
         with open(testNP+"testCIDs.pickle",'rb') as f:
             testCIDs       = cPickle.load(f)
@@ -127,6 +168,11 @@ print "RMSE of epoch: ", RMSE
 for i in range(0,len(preds)):
     printFormula(preds[i],testTargets[i],testCIDs[i],labels,means)
     mi.imsave("../evaluation/"+testCIDs[i]+".jpg",testImages[i][0])
+    
+    rank,mostSim     = getRank(testCIDs[i],preds[i],features)
+    print "correct rank: ", rank
+    print "most similar: ", mostSim
+    
     
     stop=raw_input("")
 
